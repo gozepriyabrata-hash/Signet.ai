@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+
+.env*.local
+.env
+
+# SQLite account/session store (specs/011) — never committed.
+/data/
+
+next-env.d.ts
+*.tsbuildinfo
+
+.DS_Store
