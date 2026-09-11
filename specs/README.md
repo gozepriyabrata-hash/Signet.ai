@@ -58,7 +58,7 @@ If a claim cannot be corroborated, either leave it out or say plainly that it
 is unverified — a confidently wrong spec is worse than a thin one, because it
 gets trusted later.
 
-Hold every proposal against the twelve non-negotiables in `CLAUDE.md`. If a
+Hold every proposal against the fourteen non-negotiables in `CLAUDE.md`. If a
 decision conflicts with one, that conflict is the most important paragraph in
 the file. Surface it and say whether it is a genuine exception or a sign the
 approach is wrong. Do not route around a rule quietly.

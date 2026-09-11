@@ -1,5 +1,5 @@
 ---
-description: Review a feature against the twelve non-negotiables in CLAUDE.md and the design-system contracts, then check it for PII and client/server boundary leaks.
+description: Review a feature against the fourteen non-negotiables in CLAUDE.md and the design-system contracts, then check it for PII and client/server boundary leaks.
 argument-hint: "[feature-or-path]"
 disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
@@ -19,7 +19,7 @@ be under version control yet.
 
 ### 1. Read the standards first
 
-`CLAUDE.md` for the twelve non-negotiables, `docs/design-system.md` for the
+`CLAUDE.md` for the fourteen non-negotiables, `docs/design-system.md` for the
 component contracts and the anti-pattern list. Review against what this project
 actually decided, not against generic best practice. A finding that cites a rule
 number carries weight; one that reflects your taste is noise.

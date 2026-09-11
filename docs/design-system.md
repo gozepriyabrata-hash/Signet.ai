@@ -286,7 +286,17 @@ literal glass, but that is imagery, not a token.
 
 ## 4. Motion
 
-Framer Motion. Short, consistent, purposeful.
+Short, consistent, purposeful.
+
+**Framer Motion is not installed, and that is deliberate — not an oversight.**
+The table below is written in its vocabulary because that vocabulary is the
+clearest way to specify a transition, but every value here is expressible as a
+CSS transition or a `@keyframes` block, because the whole system animates
+`transform` and `opacity` and nothing else. `specs/002` §3.6 records the
+non-use; `CLAUDE.md`'s stack table names it. Write new motion in CSS. If an
+interaction ever genuinely needs orchestration a keyframe cannot express — a
+shared-element transition, a gesture-driven drag — that is a spec, not an
+`npm install`.
 
 | Interaction | Duration | Easing |
 |---|---|---|
@@ -301,7 +311,11 @@ Framer Motion. Short, consistent, purposeful.
 - **The generation pulse** is the one shared signature animation: scale
   `[1, 1.03, 1]` with an accent glow at `opacity [0.4, 0.8, 0.4]`, 2s,
   `repeat: Infinity`, `easeInOut`. Used on `JobProgressCard` and the video
-  preview placeholder while `status === "running"`. Nowhere else.
+  preview placeholder while `status === "running"`. Nowhere else. **It ships as
+  the `.generation-pulse` class and the `@keyframes generation-pulse` block at
+  the bottom of `app/globals.css`** — apply the class, do not re-declare the
+  animation. The `prefers-reduced-motion` block above it collapses every
+  `animation-duration` to `0.01ms`, which stops this one too.
 - Animate `transform` and `opacity` only — never `width`, `height`, `top`, `left`.
 - Under `prefers-reduced-motion`, drop every transform and keep opacity only.
 
@@ -353,7 +367,8 @@ Rule 4 of `CLAUDE.md` made concrete. Renders a real editable control, an
 the user edits — they own it now — and a small accent Regenerate action in the
 label row. **Every** AI-produced string in the app goes through this component.
 
-### `PreviewPane`
+### `PreviewPane` — **specified, not built**
+
 `children`, `device?` (`desktop` | `mobile`), `title?`.
 
 The right-hand live preview used by Email Composer and Review. This is the
@@ -362,6 +377,21 @@ system's one sanctioned **light inversion**: `bg-surface-invert`,
 non-interactive and unmistakably a preview rather than a second editor — and
 because an email preview is genuinely a light document, the inversion is honest
 rather than decorative.
+
+> **Current state, so nobody builds against a component that does not exist.**
+> There is no `components/shared/PreviewPane.tsx`. `EmailStep` and `ReviewStep`
+> each render an inline preview panel on `bg-surface` with a hairline border —
+> a dark panel, not the sanctioned inversion. `ui-store`'s `previewDevice`
+> preference is persisted and read by nothing.
+>
+> This is the largest live gap between this document and the build, and it is a
+> real loss rather than a cosmetic one: the inversion is what makes a preview
+> unmistakably a document rather than a second editor, and it is the one
+> depth moment the whole system is built around. Extracting the two inline
+> panels into this component, wiring `previewDevice` to the device toggle, and
+> switching to `--surface-invert` is one focused piece of work — and it needs a
+> spec first, because `--shadow-float` is documented as "one per screen, at
+> most" and Review renders a preview beside a checklist.
 
 ### `EmptyState`
 `icon`, `title`, `description`, `action?`.

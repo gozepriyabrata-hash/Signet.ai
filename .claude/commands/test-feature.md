@@ -31,7 +31,7 @@ Give it the feature and the relevant files. Do not restate its instructions.
 
 ### 3. Cover what actually matters
 
-The point is not coverage percentage. Aim tests at the twelve non-negotiables in
+The point is not coverage percentage. Aim tests at the fourteen non-negotiables in
 `CLAUDE.md`, because those are the things that will silently regress:
 
 - if the feature touches Review or `sendPackage` → **rule 2**, nothing sends

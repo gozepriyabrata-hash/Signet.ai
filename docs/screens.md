@@ -99,6 +99,58 @@ never confirms which one was wrong. **Entry:** direct URL, the "Log in" link
 on `/signup`, or `proxy.ts` redirecting an unauthenticated visitor away from a
 protected route (`?from=<path>`). **Exit:** `/dashboard`. **Data:** real,
 same store as `/signup`.
+
+## Forgot password — `app/(marketing)/forgot-password/page.tsx`
+
+**Purpose:** start a password reset (specs/014). **Layout:** the `/login`
+shell. **Controls:** work email, and nothing else.
+
+**This screen hands the reset link back in its own response instead of emailing
+it, and says so on the page behind an explicit "Dev mode" label.** There is no
+email infrastructure in this repo — the same wall `specs/011` §5 hit for
+passwordless login. The two honest options were to disguise the gap ("check your
+inbox", where nothing arrives) or to name it; the label is the second. It is
+**not** gated by `NODE_ENV`: a flow that behaves differently in production than
+in the environment it was tested in is a flow nobody has actually tested.
+
+**The response is identical for a known and an unknown address**, exactly as
+`/login` gives one generic error for a wrong password and an unknown email. A
+form that confirms which addresses have accounts is an account-enumeration
+oracle.
+
+**Entry:** the "Forgot password?" link on `/login`. **Exit:** `/reset-password`
+via the returned link. **Data:** `passwordResetTokens` — real.
+
+## Reset password — `app/(marketing)/reset-password/page.tsx`
+
+**Purpose:** consume a reset token and set a new password. **Layout:** the same
+shell. **Controls:** new password, submitted with the token from the URL.
+
+- **Tokens are single-use, database-backed and SHA-256-hashed**, and the row is
+  deleted the moment it is consumed. Not a signed JWT: revocability is the one
+  property this token needs that a session cookie does not (`specs/014` §3.2).
+- **Known gap, named rather than hidden:** resetting a password does not
+  invalidate existing sessions. `specs/014` records it, together with the
+  rate-limiting question it shares with `specs/011`.
+
+**Entry:** the link from `/forgot-password`. **Exit:** `/login`.
+**Data:** real. An expired, unknown or already-used token renders a plain
+explanation and a way back, never a stack trace.
+
+## Privacy policy — `app/(marketing)/legal/privacy/page.tsx`
+
+**Purpose:** say what this product stores about people, because `specs/011`
+made real account PII persist server-side — the exact trigger `specs/001` §6 set
+for publishing one (`specs/013`).
+
+**Every claim on the page is sourced from this codebase's actual behaviour**
+rather than from boilerplate, and the page names its own limits — no legal
+review, no self-serve deletion yet — instead of implying either exists. A
+privacy policy that describes a product you did not build is worse than none,
+because it is the one document a reader is entitled to take literally.
+
+**Controls:** none. Static Server Component. **`/legal/terms` stays deferred**;
+nothing in the product yet needs one.
 ---
 
 ## App shell — `app/(app)/(shell)/layout.tsx`
@@ -529,8 +581,10 @@ workspace holding client reports.
 
 # The workflow
 
-Route base: `app/projects/[id]/`. Every step renders inside `StepShell` with
-`WorkflowStepper` above it.
+Route base: `app/(app)/(focus)/projects/[id]/` — six routes, seven steps. Every
+step renders inside `StepShell` with `WorkflowStepper` above it, both supplied
+by `WorkflowChrome`. Each `page.tsx` is a thin Server Component that renders the
+matching component from `components/workflow/steps/`.
 
 ```
 ● Report ─── ● Recipient ─── ● Analysis ─── ○ Video ─── ○ Email ─── ○ Review ─── ○ Send
@@ -769,32 +823,131 @@ the user on Review with the error inline and the package intact.
 
 ---
 
-## Settings — `app/settings/*`
+## Settings — `app/(app)/(shell)/settings/*`
 
 Where the full ~39-item configuration surface lives. A left sub-nav with a
-detail pane on the right; every section is its own route.
+detail pane on the right; every section is its own route. `/settings` itself is
+a **temporary** redirect to `/settings/avatar`, declared in `next.config.ts`
+rather than in a `page.tsx` that calls `redirect()` — so it never reaches React,
+and so it is not a file anyone can later add a side effect to. `permanent: false`
+deliberately: which section Settings opens on is a product guess, and a 308
+would burn that guess into every user's browser (`specs/008` §3.2).
 
 ```
 Settings
-├── Avatar      · avatars, custom avatar
-├── Voice       · voices, voice cloning
+├── Avatar      · avatars, custom avatar upload
+├── Voice       · voices, voice cloning (the one upload that confirms)
 ├── Video       · templates, formats, branding
-├── AI          · script styles, personalisation, rules, guardrails
-├── Email       · templates, CTAs, signatures
+├── AI          · script styles, and what is deliberately not configurable
+├── Email       · CTAs, signatures
 ├── Recipients  · saved recipients, segments
-├── Analytics   · tracking preferences
-├── Security    · access, retention, data handling
-└── Usage       · quota and cost
+├── Analytics   · the consent gate
+├── Security    · retention and data handling
+└── Usage       · quota and spend — read-only
 ```
 
-Each section is a list of presets with create/edit/**archive** plus a "set as
-default" action. **Not delete** — a sent `CommunicationPackage` references
-preset ids and `/campaigns/[id]` exists to say what was sent, so destroying a
-preset would make that page quietly show less than the truth about a message
-that already reached a client. Archived presets leave every workflow dropdown
-and still resolve for history (`specs/008-settings.md` §3.3). **Whatever a workflow dropdown offers is defined here.** When a
-new configuration requirement arrives, it lands in this tree — the workflow
-step's control count does not grow.
+**Eight of the nine are the same screen.** `PresetList` renders a section
+header, a create action and a list of `PresetRow`s, with a section-specific
+panel slotted in as children. That repetition is the evidence for `specs/008`
+§3.1's claim that rule 1's overflow has somewhere to go that stays navigable at
+thirty-nine items — and it is why a tenth section is cheap when one is genuinely
+needed.
 
-**Data:** `['presets', kind]` per section; mutations invalidate that key so the
-workflow dropdowns pick up changes immediately.
+**Allowed controls, everywhere in this tree:** create, edit, **archive**,
+restore, set-as-default, and each section's own upload or document fields.
+**Never delete**, and never send. `eslint.config.mjs` enforces both with a
+`no-restricted-syntax` block over the settings routes and components, because
+`specs/008` §4 asks that it hold by construction rather than by nobody having
+tried it.
+
+**The mirror of rule 1 governs what may be added here.** A settings screen may
+not contain a control that belongs to a single project. If a control's value
+would differ between two projects, it is a workflow control. Without that
+clause, "config belongs in Settings" degrades into "anything awkward belongs in
+Settings", and a per-project override arrives here wearing a preset's clothes
+(`specs/008` §3.9).
+
+### The seven preset sections
+
+`avatar`, `voice`, `video`, `ai`, `email`, `recipients` — plus the branding and
+segment kinds carried inside Video and Recipients.
+
+- **Avatar** — `avatar` presets plus an `UploadPanel` for a custom portrait
+  (PNG/JPEG/WebP, 8MB cap). The first section built, and the one the other eight
+  were measured against.
+- **Voice** — `voice` presets plus the clone upload (WAV/MP3/M4A, 25MB cap).
+  **This is the only upload in the product that asks before it happens**, and
+  the asymmetry is the decision. A custom avatar is a picture of someone who
+  chose to be in a video; a cloned voice can be made to say anything, and it is
+  the one upload where the person supplying the sample and the person clicking
+  may not be the same. The dialog asks for **the name of the person in the
+  recording** — that is the point rather than a form field, because someone who
+  cannot say whose voice it is should not be cloning it. It is a different job
+  from the send confirmation: that one guards an irreversible outward action,
+  this one guards a claim about consent (`specs/008` §3.10, `CLAUDE.md` rule 13).
+- **Video** — `videoTemplate` and `branding` presets. Format and captions are
+  the two the Video step exposes per project; everything else is template config.
+- **AI** — `scriptStyle` presets, plus a Guardrails panel that **answers rather
+  than implements**. Every generated string is editable before use and nothing
+  sends without human approval; those are structural, so there is no switch to
+  turn them off, and the panel says that is the answer rather than an omission.
+  **Personalisation level is deliberately absent** — it varies per recipient, so
+  rule 1's mirror puts it in the Recipient step. This was the first screen built
+  after that clause was added, and the first place it would have been broken.
+- **Email** — `cta` and `signature` presets. A CTA's target URL is set here,
+  never typed in the workflow.
+- **Recipients** — the saved-recipient store behind the Recipient step's "Load
+  from saved recipient". **`deleteRecipient` is a real delete — the one place
+  `specs/008` does not archive.** A saved recipient is a person, and "we kept
+  it, just hidden" is the wrong answer to "remove this person". History survives
+  because a sent package holds its own copy rather than a reference (§3.4).
+
+### `/settings/analytics` — the consent gate
+
+Not a preset list. Three toggles on one `WorkspaceSettings.tracking` document:
+opens, clicks, and whether the recipient is told anything is measured.
+
+**Every toggle defaults to off**, and that is a product decision rather than a
+placeholder (`specs/008` §3.7). A product whose proposition is that a human
+approves every send does not open with recipient tracking already enabled and a
+checkbox to find.
+
+**The boundary with `/analytics` is hard**: this screen decides whether anything
+is observed about a recipient and what; that screen reports what the product
+already knows about its own work. `/analytics` may only display metrics whose
+collection this screen has switched on (`specs/006` §3.3). The open-tracking
+toggle carries the Mail Privacy Protection caveat **beside it** — a switch that
+promises a number the product cannot compute is worse than no switch.
+
+### `/settings/security` — retention
+
+The other half of the same document: `retention.reportDays`,
+`retention.packageDays` (days; `0` means keep), and whether deleting a project
+also removes its recipient record.
+
+Patches merge one level deep on the adapter's side, so this screen can change
+`retention` without resending `tracking`. Two screens editing one document must
+not be able to overwrite each other's half.
+
+### `/settings/usage` — read-only, on purpose
+
+Quota and spend for the current period. **There is no control here at all.** A
+control that changed a quota would be a billing action, and this product has no
+billing (`specs/008` §3.5). The section answers "what have I used", and the
+answer is not editable. Money is held in minor units, so nothing is a float.
+
+**Data:** `qk.presets(kind, includeArchived)` per preset section — Settings is
+the **one** caller that passes `includeArchived: true`, which is what keeps
+archived presets out of every workflow dropdown without `VideoStep` knowing
+archiving exists (`specs/008` §3.4). Mutations invalidate both variants so the
+workflow picks up changes immediately. `qk.settings()` for Analytics and
+Security, `qk.usage()` for Usage, `qk.recipients()` for Recipients.
+
+### What the PRD asks of this tree and has not got
+
+The PRD's eight setup areas do not map cleanly onto nine routes.
+**Report-reading configuration has no home at all** — `analyzeReport` takes no
+options — and it is the strongest current argument for a tenth section. Sender
+profiles, campaign templates, avatar-to-voice matching, languages, name
+pronunciation, sending method and per-role permissions are all named in the PRD
+and none is built. `docs/prd-alignment.md` §4 is the full mapping, area by area.

@@ -1,13 +1,13 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
 
 import * as schema from "@/lib/db/schema";
 
 /** A fresh in-memory database, migrated, for tests that touch `lib/auth/actions.ts`. */
-export function createTestDb() {
-  const sqlite = new Database(":memory:");
-  const db = drizzle(sqlite, { schema });
-  migrate(db, { migrationsFolder: "./drizzle" });
+export async function createTestDb() {
+  const client = createClient({ url: ":memory:" });
+  const db = drizzle(client, { schema });
+  await migrate(db, { migrationsFolder: "./drizzle" });
   return db;
 }

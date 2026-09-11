@@ -4,6 +4,9 @@ The UI is mock-first: every screen is fully clickable with no backend running.
 One environment flag swaps the mock adapter for the real one, and that swap
 touches exactly one file.
 
+**One subsystem is exempt and always real:** accounts, sessions and password
+reset (§4). Everything else on this page is mock-backed today.
+
 ---
 
 ## 1. Domain types — `types/index.ts`
@@ -144,12 +147,21 @@ export interface Preset {
   isDefault: boolean;
   thumbnailUrl?: string;
   config: Record<string, unknown>;   // kind-specific, opaque to the workflow
+  archivedAt?: string;               // presets are archived, NEVER deleted
 }
 
 export interface Avatar extends Preset { kind: "avatar"; previewUrl: string; }
 export interface Voice  extends Preset { kind: "voice";  sampleUrl: string; }
 export interface CTA    extends Preset { kind: "cta";    label: string; url: string; }
 ```
+
+`archivedAt` is the whole of `specs/008` §3.3 in one optional field. A sent
+`CommunicationPackage` stores `email.ctaId`, `email.signatureId`,
+`video.avatarId` and `video.voiceId` as **references**, and `/campaigns/[id]`
+exists to say what was sent. Destroying a preset would make that page quietly
+show less than the truth about a message that already reached a client — it
+would not break, which is what makes it the worst shape of data loss. The rule:
+anything a historical record can reference is archived, not destroyed.
 
 ### Outputs
 
@@ -205,24 +217,93 @@ export interface CommunicationPackage {
 }
 ```
 
-### Dashboard
+### Workspace-level documents
 
-The three headline numbers on `/dashboard`. Not reachable from `Project` — the
-one deliberate exception to the "no orphan types" rule above, because it is an
-aggregate over all projects rather than a part of one.
+Four types that are not reachable from `Project`. They are the deliberate
+exceptions to the "no orphan types" rule above, because each is an aggregate or
+a workspace setting rather than a part of one project.
 
 ```ts
+/** The three headline numbers on /dashboard. */
 export interface DashboardStats {
   activeProjects: number;
   videosGenerated: number;
   emailsSent: number;
 }
+
+/** One record, not a list — behind /settings/analytics and /settings/security. */
+export interface WorkspaceSettings {
+  tracking: {
+    opens: boolean;                 // EVERY FIELD HERE DEFAULTS FALSE
+    clicks: boolean;
+    discloseToRecipient: boolean;   // whether a recipient is told anything is measured
+  };
+  retention: {
+    reportDays: number;             // counted in days; 0 means "keep"
+    packageDays: number;
+    purgeRecipientWithProject: boolean;
+  };
+}
+
+/** What /settings/usage reports. Read-only: a control that changed a quota
+ *  would be a billing action, and this product has no billing. */
+export interface Usage {
+  periodStart: string;
+  periodEnd: string;
+  videosGenerated: number;
+  videoQuota: number;
+  emailsSent: number;
+  emailQuota: number;
+  spendMinorUnits: number;          // minor units, so no floating-point money
+  currency: string;
+}
+
+export type AnalyticsRange = "7d" | "30d" | "90d" | "all";
+
+/** What /analytics reports. Aggregates only, permanently — no field here is or
+ *  may become per-recipient (specs/006 §3.4). */
+export interface AnalyticsSummary {
+  range: AnalyticsRange;
+  from: string;                     // inclusive ISO bounds, so the screen can
+  to: string;                       // label what it is showing
+  packagesSent: number;
+  videosGenerated: number;
+  emailsSent: number;
+  sendsFailed: number;
+  successRate: number | null;       // NULL, never 0, when a period holds no sends
+  medianHoursToSend: number | null;
+  sentOverTime: { bucketStart: string; count: number }[];  // INCLUDING empty buckets
+  bucket: "day" | "week";
+  projectsByStatus: { status: ProjectStatus; count: number }[];  // including zeroes
+}
 ```
+
+Three of those comments are load-bearing and are the reason the shapes look
+over-specified:
+
+- **`WorkspaceSettings.tracking` defaults every field to `false`.** That is a
+  product decision, not a placeholder (`specs/008` §3.7). A product whose
+  proposition is that a human approves every send does not open with recipient
+  tracking already enabled and a checkbox to find.
+- **`successRate` and `medianHoursToSend` are `number | null`, never `0`.** A
+  `0%` success rate rendered from an absence reads as a catastrophe, and "no
+  data" and "everything failed" are the two facts a reporting screen most needs
+  to keep apart (`specs/006` §4).
+- **`sentOverTime` includes empty buckets and `projectsByStatus` includes
+  zeroes.** A gap in a time series is data; skipping empty buckets is how a line
+  chart silently lies about its x-axis, and a status missing from a chart and a
+  status at zero are different facts.
 
 ---
 
 `CommunicationPackage` is the deliverable the whole product exists to produce:
 email + video + CTA (via `email.ctaId`) + report, approved by a human.
+
+**Two PRD obligations have no field here yet** — the AI disclosure a recipient
+is owed, and the provenance trail that ties a generated claim back to a page of
+the report. Both are `CLAUDE.md` rules 13 and 14, and both land in these types
+when they land at all: a citation the UI cannot render is not a citation. See
+`docs/prd-alignment.md` §7.
 
 ---
 
@@ -244,7 +325,7 @@ separate, always-real subsystem instead: Server Actions
 a `cookies()`-based Data Access Layer, and one SQLite table (`lib/db/schema.ts`).
 It is the one part of this repo that is not mock-backed, by direct instruction —
 see specs/011 §2.1 for why that departs from this document's "mock-backed
-today" framing everywhere else.
+today" framing everywhere else, and **§4 below for the schema itself**.
 
 ```ts
 /** `query` matches `Project.name` ONLY. It must never be extended to search
@@ -252,6 +333,19 @@ today" framing everywhere else.
 export interface ListProjectsOptions {
   status?: ProjectStatus;
   query?: string;
+}
+
+/** Archived presets are a deliberate opt-in; see `listPresets`. */
+export interface ListPresetsOptions {
+  includeArchived?: boolean;
+}
+
+/** What a settings screen may set on a preset. `id`, `kind` and `archivedAt`
+ *  are the adapter's, not the form's. */
+export interface PresetInput {
+  name: string;
+  description?: string;
+  config?: Record<string, unknown>;
 }
 
 export interface ApiClient {
@@ -291,6 +385,10 @@ export interface ApiClient {
    *  holds its own copy of the recipient, so history survives (§3.4). */
   deleteRecipient(id: string): Promise<void>;
 
+  /** Read-only. A control that changed a quota would be a billing action, and
+   *  this product has no billing (specs/008 §3.5). */
+  getUsage(): Promise<Usage>;
+
   getSettings(): Promise<WorkspaceSettings>;
   updateSettings(patch: Partial<WorkspaceSettings>): Promise<WorkspaceSettings>;
   buildPackage(projectId: string): Promise<CommunicationPackage>;
@@ -325,10 +423,18 @@ export const api: ApiClient =
 Mocks are the **default**, so a fresh clone runs with no configuration.
 Components import `api` — never a mock module directly.
 
+Setting `NEXT_PUBLIC_USE_MOCKS=false` today gets you `realClient`, whose every
+method throws a named `notImplemented` error rather than returning an empty
+result. That is deliberate: a stub that resolves to `[]` looks like an empty
+workspace, and the difference between "no data" and "no backend" is the thing a
+developer most needs told.
+
 ### Mock adapter rules — `lib/api/mock/`
 
 - **Seeded fixtures.** A deterministic seed so screenshots and demos are stable
-  across reloads. Three sample projects covering ready / generating / sent.
+  across reloads. Seven seed projects spanning every `ProjectStatus`, plus ten
+  already-sent packages behind `/campaigns` and `/analytics` — enough history
+  that the charts have a real shape rather than three points.
 - **Realistic latency.** 300–800ms for reads and mutations. Not instant — the
   loading states must be visible during development or they rot.
 - **Real job progression.** `getJob` advances `progress` and `stage` on each
@@ -404,3 +510,92 @@ workflow picks up the new asset, then stops. Never poll a `succeeded` or
 Never fetch inside a Zustand store. Never put the step index in the Query cache.
 Draft edits stay in Zustand until the step's Next commits them through a
 mutation — that is what makes back-navigation lossless.
+
+**"Current step" in that table is the *resume position*, not a stored index.**
+The step a user is on is the URL, because the step *is* the address: it survives
+a refresh, it is linkable, and the Back button already moves it correctly.
+`lib/workflow.ts` derives the resume position from the project's data instead of
+storing it, so the stepper and the `/projects/[id]` redirect cannot drift apart
+and leave no test able to say which one is wrong (`specs/007` §3.5, §4).
+
+---
+
+## 4. The auth schema — the one real database
+
+Everything above is mock-backed. This is not. `specs/011` and `specs/014` build
+account creation, login, logout and password reset for real, against two SQLite
+tables, because a login form has nothing to check a credential against
+otherwise.
+
+```ts
+// lib/db/schema.ts
+export const accounts = sqliteTable("accounts", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  workEmail: text("work_email").notNull().unique(),
+  company: text("company").notNull(),
+  passwordHash: text("password_hash").notNull(),   // never leaves the DAL
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+  tokenHash: text("token_hash").primaryKey(),      // SHA-256 of the token, not the token
+  accountId: text("account_id").notNull().references(() => accounts.id),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+```
+
+**There is no `sessions` table.** Sessions are stateless, carried entirely in a
+`jose`-signed cookie (`lib/auth/session.ts`, `specs/011` §3.2).
+
+**The reset token's primary key is a hash of the token, never the token.** A
+database read alone must not be enough to reset an account's password — the same
+reasoning `accounts.passwordHash` already applies to login credentials. Rows are
+single-use and deleted the moment they are consumed. It is a database row rather
+than a signed JWT because revocability is the one property this token needs that
+a session does not (`specs/014` §3.2).
+
+### The DTO discipline
+
+`passwordHash` is never returned from a Server Action or from the DAL. What
+crosses that boundary is `WorkspaceAccount`, and the two input shapes:
+
+```ts
+export interface SignupInput { name: string; workEmail: string; company: string; password: string; }
+export interface LoginInput  { workEmail: string; password: string; }
+
+/** The safe account DTO. Returned by signupAction/loginAction on success and by
+ *  getCurrentAccount(). PII by analogy with rule 11: `name` and `workEmail`
+ *  describe the person using the product rather than a Recipient, but the same
+ *  discipline applies — never logged, never placed in a URL. */
+export interface WorkspaceAccount {
+  id: string; name: string; workEmail: string; company: string; createdAt: string;
+}
+```
+
+### Driver and deployment
+
+`drizzle-orm/libsql`, not `better-sqlite3`. The same client works against a
+local file in dev (`DATABASE_FILE_PATH`, default `./data/app.db`, gitignored)
+and a hosted Turso database in production (`TURSO_DATABASE_URL` +
+`TURSO_AUTH_TOKEN`) — a serverless deployment has no writable, persistent
+filesystem for a plain SQLite file, and native bindings are a build risk this
+repo does not need to take. `getDb()` constructs lazily, so importing the module
+does not open a database during a build step that never touches one.
+
+> `specs/011` §7 still lists `better-sqlite3` and `@types/better-sqlite3` as the
+> dependencies it added. That is the spec recording what was true when it was
+> written; the swap to libsql came later and is recorded here rather than by
+> editing an accepted spec's history.
+
+### Route protection
+
+`proxy.ts` — Next 16's rename of `middleware.ts`, deprecated rather than
+aliased — reads only the cookie's shape, with no database round-trip, per the
+Next.js Authentication guide's own instruction for optimistic checks. **It is
+the only protection layer today**, and that is a known limit rather than the
+finished boundary: `specs/003` §3.3 committed every `(app)` route to
+client-side-only fetching with no server prefetch, so there is no
+server-rendered protected data yet for a DAL guard to sit in front of
+(`specs/011` §2.5).

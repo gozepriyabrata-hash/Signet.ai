@@ -30,7 +30,7 @@ than a thin one, because it gets trusted later.
 
 ### 2. Check it against the constitution
 
-Read `CLAUDE.md` and hold the proposal against the twelve non-negotiables. If
+Read `CLAUDE.md` and hold the proposal against the fourteen non-negotiables. If
 the decision conflicts with one, that conflict is the most important paragraph
 in the spec. Do not quietly route around a rule — surface it and say whether
 this is a genuine exception or a sign the approach is wrong.

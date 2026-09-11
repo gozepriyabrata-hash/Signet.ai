@@ -10,7 +10,7 @@ import { createTestDb } from "@/test/db";
 const { jar, cookies } = createCookieJar();
 vi.mock("next/headers", () => ({ cookies }));
 
-const testDb = createTestDb();
+const testDb = await createTestDb();
 vi.mock("@/lib/db/client", () => ({ getDb: () => testDb }));
 
 process.env.SESSION_SECRET = "test-secret-at-least-32-bytes-long-enough";
