@@ -11,58 +11,25 @@ import { useJobPolling } from "@/hooks/use-job-polling";
 import { useProject } from "@/hooks/use-project";
 import { api } from "@/lib/api";
 import { qk } from "@/lib/query-keys";
+import {
+  REPORT_INPUT_ACCEPT,
+  rejectionForReportFile,
+} from "@/lib/report-validation";
 import { useWorkflowStore } from "@/stores/workflow-store";
 import type { Report } from "@/types";
 
 /**
  * Step 1 — get the source document in and parsed.
  *
- * ── Validation happens here, and is not a security control ──────────────────
- * CLAUDE.md rule 12 requires type and size to be checked before the file
- * reaches the service layer, and they are. What that buys is a user learning in
- * 50ms instead of after a 25MB upload.
- *
- * It buys nothing else, and reading rule 12 as a security boundary would be a
- * mistake. MDN is explicit that `accept` "doesn't validate the types of the
- * selected files", that a user can override it in the file chooser, and that it
- * "should be backed up by appropriate server-side validation" — and that some
- * operating systems report non-standard MIME types for common extensions, which
- * is why the extension is checked as a fallback rather than trusted alone. When
- * `lib/api/real/` becomes real, the same checks must exist on the far side.
+ * File-type/size validation is `lib/report-validation.ts` — see that file's
+ * header for why it is not a security control (CLAUDE.md rule 12) and why
+ * both the MIME type and the extension are checked. Shared with the
+ * dashboard's hero "+" attach control so the two places a user can pick a
+ * report enforce identical rules.
  *
  * Rejections render inline on the dropzone, never as a toast: a message about
  * the file belongs where the file is.
  */
-
-const MAX_BYTES = 25 * 1024 * 1024;
-
-/** The IANA-registered types. `application/pdf` and the OOXML wordprocessing
- *  type; anything else is refused before the seam is called. */
-const ACCEPTED_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]);
-const ACCEPTED_EXTENSIONS = [".pdf", ".docx"];
-
-function rejectionFor(file: File): string | null {
-  const name = file.name.toLowerCase();
-  const extensionOk = ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
-
-  // Either signal is enough to accept, because neither is reliable alone: the
-  // browser's `type` can be empty or non-standard, and an extension is just a
-  // string. Both wrong is a confident enough refusal.
-  if (!ACCEPTED_TYPES.has(file.type) && !extensionOk) {
-    return "That file is not a PDF or a Word document. Upload a .pdf or .docx.";
-  }
-  if (file.size > MAX_BYTES) {
-    const mb = Math.round(file.size / 1_000_000);
-    return `That file is ${mb}MB. The limit is 25MB.`;
-  }
-  if (file.size === 0) {
-    return "That file is empty.";
-  }
-  return null;
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} kB`;
@@ -107,7 +74,7 @@ export function ReportStep({ projectId }: { projectId: string }) {
 
   const accept = (file: File | undefined) => {
     if (!file) return;
-    const problem = rejectionFor(file);
+    const problem = rejectionForReportFile(file);
     setRejection(problem);
     if (problem) return;
     clearActiveJob(projectId, "parse");
@@ -161,7 +128,7 @@ export function ReportStep({ projectId }: { projectId: string }) {
                   ref={inputRef}
                   type="file"
                   // A hint to the file picker, nothing more — see the header.
-                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept={REPORT_INPUT_ACCEPT}
                   className="sr-only"
                   onChange={(event) => accept(event.target.files?.[0])}
                 />

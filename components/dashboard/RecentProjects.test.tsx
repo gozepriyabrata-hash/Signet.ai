@@ -104,6 +104,11 @@ describe("RecentProjects · the four states", () => {
     expect(
       within(list).getByRole("link", { name: "Review Q3 Portfolio Review" }),
     ).toHaveAttribute("href", "/projects/prj_8f2a1c");
+
+    // Absolute, not relative — specs/015-dashboard-redesign.md §3.3, same
+    // formatDate() output components/projects/ProjectsTable.test.tsx already
+    // asserts for the identical fixture updatedAt.
+    expect(within(list).getByText("29 Aug 2026")).toBeInTheDocument();
   });
 });
 

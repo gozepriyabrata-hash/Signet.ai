@@ -351,7 +351,9 @@ export interface PresetInput {
 export interface ApiClient {
   listProjects(options?: ListProjectsOptions): Promise<Project[]>;
   getProject(id: string): Promise<Project>;
-  createProject(): Promise<Project>;
+  /** `name` is optional — the dashboard's hero card passes typed text;
+   *  every other caller omits it and gets the adapter's default. */
+  createProject(name?: string): Promise<Project>;
   getStats(): Promise<DashboardStats>;
 
   uploadReport(projectId: string, file: File): Promise<Job<Report>>;

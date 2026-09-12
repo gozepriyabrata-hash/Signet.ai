@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { formatDate } from "@/lib/utils";
 import type { Project, ProjectStatus } from "@/types";
 
 /**
@@ -13,6 +14,11 @@ import type { Project, ProjectStatus } from "@/types";
  * look, and do not put any recipient field into the href. A "recent activity"
  * list is the single most natural place for that to creep in.
  * ────────────────────────────────────────────────────────────────────────────
+ *
+ * The date is absolute (`formatDate`), not relative ("2 hours ago"). `lib/utils.ts`
+ * already ruled this out — a relative label is a `Date.now()` read wearing a
+ * timestamp's clothes, and it goes silently stale on any tab left open
+ * (specs/003-dashboard.md §2.3, specs/015-dashboard-redesign.md §3.3).
  */
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -52,9 +58,21 @@ export function ProjectRow({ project }: { project: Project }) {
           {project.name}
         </p>
         <p
-          className={`mt-1 text-sm font-light tracking-[0.01em] ${STATUS_TONE[project.status]}`}
+          className={`mt-1 flex items-center gap-2 text-sm font-light tracking-[0.01em] ${STATUS_TONE[project.status]}`}
         >
           {STATUS_LABEL[project.status]}
+          {/* body-foreground, not muted-foreground: this row sits inside a
+              --surface card, where muted-foreground's 4.30:1 falls under the
+              rule-10 floor (docs/design-system.md §1, "Contrast — two
+              measured traps"). Same <time>/tabular-nums treatment as the
+              /projects table's date column (components/projects/ProjectTableRow.tsx),
+              which already renders this exact field. */}
+          <span aria-hidden="true" className="text-body-foreground">
+            ·
+          </span>
+          <time dateTime={project.updatedAt} className="tabular-nums text-body-foreground">
+            {formatDate(project.updatedAt)}
+          </time>
         </p>
       </div>
 

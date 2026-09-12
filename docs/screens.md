@@ -199,12 +199,23 @@ toggle and theme switch are client.
 Reports, Videos, Templates and Recipients are deliberately absent —
 `specs/001-route-map.md` §4 resolved each of them away rather than building a
 route. Templates in particular would be a second configuration surface, which
-rule 1 of `CLAUDE.md` forbids.
+rule 1 of `CLAUDE.md` forbids. This is also why the wireframe behind
+`specs/015-dashboard-redesign.md` did not get its "Explore templates" quick
+action, or its `Chat`/`Library`/`Team` destinations — none of those exist in
+this product either.
 
 - Sidebar collapses to icons below `lg`, becomes a drawer below `md`.
-- The active route is marked with a neutral filled background — **not** accent.
+- The active route is *documented* as a neutral filled background — **not**
+  accent — but that highlight is not actually wired up in
+  `components/shell/Sidebar.tsx` today (it would need `usePathname`, a client
+  hook, on what is otherwise a Server Component). Real follow-up work, not a
+  claim to build against yet.
 - **The workflow routes hide the sidebar entirely.** Once a user is inside
   `projects/[id]/*`, the stepper replaces sidebar navigation. Focus is the point.
+- A "New Project" action sits above the destination list
+  (`specs/015-dashboard-redesign.md` §3.5) — a second entry point to the same
+  `createProject` mutation the dashboard's hero CTA calls, not a new
+  capability.
 
 Data: none. Sidebar collapse state lives in the `ui-store` Zustand slice,
 persisted to `localStorage`.
@@ -213,47 +224,89 @@ persisted to `localStorage`.
 
 ## Dashboard — `app/(app)/(shell)/dashboard/page.tsx`
 
-**Purpose:** answer "what is happening in my system?" in one glance, and make
-`+ Create New` the obvious next action.
+**Purpose:** make starting a new project the one thing on this screen.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ Dashboard                                           │
-│ Create personalised client communications           │
-│                                    [ + Create New ] │
-├─────────────────────────────────────────────────────┤
-│  Active Projects    Videos Generated   Emails Sent  │
-│        24                 186              142      │
-├─────────────────────────────────────────────────────┤
-│ Recent Projects                                     │
-│  Client Report A     Video Ready      Review →      │
-│  Client Report B     Generating       Open →        │
-│  Client Report C     Sent             View →        │
-└─────────────────────────────────────────────────────┘
+                                                        
+                                                        
+                Good morning, Priyabrata               
+                                                        
+       ┌─────────────────────────────────────────┐    
+       │ [ Start a new project — upload a       ] │    
+       │ [ report to begin.  (typed text here)  ] │    
+       │  📎 report.pdf ✕                         │    
+       │                                           │    
+       │  +                    [ Start a new… ]   │    
+       └─────────────────────────────────────────┘    
+                                                        
+                                                        
 ```
 
-**Allowed controls:** `+ Create New`, a status filter on the recent list, and
-row-level open/review links. Nothing else — no settings, no config, no bulk
-actions in v1.
+Centred in the remaining viewport, not anchored top-left — a deliberate
+single-focus composition (`specs/015-dashboard-redesign.md` §10), closer to
+the reference it was asked to match than a form with a button pinned above
+the fold. The card is `rounded-2xl`, a documented exception to the "dense
+content is 4px" rule (`docs/design-system.md` §3 itself names "the inverted
+prompt surface" as the kind of floated content that radius band is for) —
+justified here because, unlike every other card this document describes,
+this one *is* the entire page.
 
-**No time-of-day greeting, still.** This screen opened with "Good morning,
-{name}" until neither half turned out to be renderable: there is no user name
-until authentication exists (`specs/001` §5), and the time of day in a
-statically prerendered Server Component is evaluated once at build, so every
-visitor would be told good morning. Authentication now exists (specs/011),
-which resolves the first half — but the greeting itself was left unrestored on
-purpose, as separable follow-up work, not a gap in specs/011. Restore it
-computed client-side from `getCurrentAccount()` (`lib/auth/dal.ts`). See
-`specs/003-dashboard.md` §3.10.
+**The top line is a real, typable field** (`specs/015` §11) — typed text
+becomes the new project's `name`, via one new optional argument on
+`ApiClient.createProject`. **The "+" is a real, accessible file-attach
+control**, not decoration — clicking or tabbing to it opens a file picker,
+and the card is also a drop target, both sharing the exact validation
+`ReportStep`'s own dropzone uses (`lib/report-validation.ts`). If a file is
+attached, "Start a new project" creates the project, uploads the file as its
+report through the same mutation `ReportStep` calls, and lands on the resume
+route already mid-parse.
 
-**Data:** `useQuery(qk.projects(status))` and `useQuery(qk.stats())`, both
-fetched **client-side only**. The mock adapter keeps its state in
-`sessionStorage`, which the server cannot read, so a server prefetch would
-dehydrate fixture data the browser disagrees with. Revisit when
-`lib/api/real/` is real — `specs/003` §3.3.
-**States:** skeleton stat tiles + 3 skeleton rows; `EmptyState` with a
-"Create your first communication" action when there are zero projects; inline
-error card with Retry.
+**What typing here does not do:** the text is a name, not a request — it is
+not read for meaning, summarised, or handed to any model. There is no
+freeform-AI entry point on this screen or anywhere else in the product; see
+`specs/015` §4 and §11 for why, and what would have to change first.
+
+**Allowed controls:** the hero name field, its file-attach control, the
+"Start a new project" action, and the sidebar's duplicate entry point to the
+plain (unnamed) version of the same mutation. Nothing else — no settings, no
+config, no bulk actions, no navigation shortcuts in v1. This shape is
+`specs/015-dashboard-redesign.md`, not the original hand-drawn mock: it
+restyles the same underlying action to match a supplied wireframe's visual
+weight, while rejecting the wireframe's own chat-product content ("Explore
+templates," a global search bar, freeform AI interpretation of the typed
+text) — none of which this product has a route, type or spec for.
+
+**The stat tiles, Recent Projects list and the Projects/Campaigns/Analytics
+quick-action cards are all gone, by direct instruction** (specs/015 §8, §9),
+not folded into the rule-1 reasoning above. `StatRow`, `RecentProjects`,
+`ProjectRow` and `QuickActions` still exist in `components/dashboard/` and
+still pass their own tests; nothing currently renders any of them. Whoever
+picks this up next should either restore them somewhere (this page, or a
+future screen — `Sidebar.tsx` already covers the same three destinations
+`QuickActions` linked to) or delete them outright — leaving them un-rendered
+indefinitely is the one outcome nobody decided on purpose.
+
+**The time-of-day greeting is restored.** Authentication now exists
+(`specs/011`), which is the precondition `specs/003-dashboard.md` §3.10 named
+for bringing it back. The account name comes from `getCurrentAccount()`,
+called once in `page.tsx` (`lib/auth/dal.ts` is `server-only`, so it cannot be
+read from a client component) and passed down as a prop; the time-of-day half
+is resolved client-side, via `useSyncExternalStore`, because the server's
+clock/timezone is not the visitor's. This is also why `/dashboard` is now
+`ƒ` (server-rendered per request) rather than `○` — the one runtime-API read
+(`getCurrentAccount()`'s session-cookie check) takes the route dynamic, which
+`specs/003` §3.4 named as the expected moment for that to happen. It is
+scoped to this route only: the sidebar does not repeat the same call, so
+every other `(shell)` route stays static.
+
+**Data:** none. The one server read left on this route is
+`getCurrentAccount()` for the greeting's name; the hero CTA is a mutation
+triggered only by a click, never on mount.
+**States:** none of rule 9's four apply here any more either, for the same
+reason — there is no async surface left on this page to have a loading,
+empty or error state. `StatRow` and `RecentProjects` still own their
+skeleton/`EmptyState`/Retry states in isolation, wherever they end up
+rendered next.
 
 ---
 
