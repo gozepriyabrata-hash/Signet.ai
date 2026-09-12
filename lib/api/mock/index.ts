@@ -154,13 +154,13 @@ export const mockClient: ApiClient = {
     return project;
   },
 
-  async createProject(): Promise<Project> {
+  async createProject(name?: string): Promise<Project> {
     await delay("createProject");
     const projects = readProjects();
     const now = new Date().toISOString();
     const project: Project = {
       id: `prj_${Math.random().toString(16).slice(2, 8)}`,
-      name: "Untitled project",
+      name: name?.trim() || "Untitled project",
       status: "draft",
       createdAt: now,
       updatedAt: now,

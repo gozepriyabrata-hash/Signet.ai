@@ -1,48 +1,44 @@
 import type { Metadata } from "next";
 
-import { RecentProjects } from "@/components/dashboard/RecentProjects";
-import { StatRow } from "@/components/dashboard/StatRow";
-import { NewProjectButton } from "@/components/shared/NewProjectButton";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { getCurrentAccount } from "@/lib/auth/dal";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 /**
- * The dashboard.
+ * The dashboard — specs/015-dashboard-redesign.md.
  *
- * A Server Component that touches no runtime API, so the page prerenders a
- * static shell and the two client children fetch after hydration. There is
- * deliberately no `dynamic = "error"` guard here, unlike the landing page: this
- * route is expected to become dynamic the moment authentication exists, and a
- * guard that gets removed one spec later teaches the next reader that the guard
- * is negotiable (specs/003-dashboard.md §3.4).
+ * `async` now, and dynamic (`ƒ`, not `○`) as a result: `getCurrentAccount()`
+ * reads the session cookie to resolve the greeting's name. specs/003-dashboard.md
+ * §3.4 named this as the expected moment for the route to go dynamic — "the
+ * dashboard is expected to become dynamic the moment authentication exists" —
+ * and it is scoped to this route only. `Sidebar.tsx` deliberately does not
+ * make the same call, so every other `(shell)` route stays statically
+ * prerendered.
  *
- * No greeting. docs/screens.md opens this page with "Good morning, {name}", and
- * neither half can be rendered: there is no name until auth exists, and the
- * time of day would be evaluated once at build in a prerendered component, so
- * every visitor would be told good morning (§3.10).
+ * The greeting itself is rendered by `DashboardHeader`, a client component:
+ * the account name is correct from this server-rendered prop on first paint,
+ * but the time-of-day half is resolved client-side after mount, because the
+ * server's clock/timezone is not the visitor's (see that component's comment).
  *
- * No `loading.tsx` either — it is a Suspense fallback for server work, and
- * there is none here, so it would flash for ~0ms before the real skeletons
- * appear (§3.6).
+ * The stat tiles, Recent Projects list and the Projects/Campaigns/Analytics
+ * quick-action cards are deliberately not rendered here any more — direct
+ * instructions, not a design-system inference. `StatRow`, `RecentProjects`
+ * and `QuickActions` are unchanged and still exported; nothing else in the
+ * app renders them, so they are dead code until either this page uses them
+ * again or someone removes them outright. See specs/015-dashboard-redesign.md
+ * §8, §9.
+ *
+ * No `loading.tsx` — it is a Suspense fallback for server work, and the one
+ * server read here (`getCurrentAccount()`) resolves before the client
+ * components below it ever need one (specs/003-dashboard.md §3.6).
  */
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const account = await getCurrentAccount();
+
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-6 py-10 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-light tracking-tight text-foreground">
-            Dashboard
-          </h1>
-          <p className="mt-3 text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
-            Create personalised client communications.
-          </p>
-        </div>
-
-        <NewProjectButton />
-      </div>
-
-      <StatRow />
-      <RecentProjects />
+      <DashboardHeader accountName={account?.name ?? null} />
     </div>
   );
 }

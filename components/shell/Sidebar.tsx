@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import { SidebarToggle } from "@/components/shell/SidebarToggle";
 import { SignOutButton } from "@/components/shell/SignOutButton";
+import { NewProjectButton } from "@/components/shared/NewProjectButton";
 
 /**
  * The workspace sidebar. Server Component; only the collapse toggle is client.
@@ -27,8 +28,12 @@ import { SignOutButton } from "@/components/shell/SignOutButton";
  * in parallel with the visible text.
  *
  * Width comes from --sidebar-width, which the pre-paint script in the root
- * layout has already resolved. The active route is marked with a neutral
- * filled background, never accent (docs/screens.md).
+ * layout has already resolved. The active route is *documented* as a neutral
+ * filled background, never accent (docs/screens.md) — but no active-route
+ * detection is actually wired up below (it would need `usePathname`, a
+ * client hook, on what is otherwise a Server Component). That gap predates
+ * specs/015-dashboard-redesign.md and is not this file's to close; ITEM_CLASS
+ * below applies uniformly, pending that follow-up.
  */
 const DESTINATIONS: ReadonlyArray<{
   href: string;
@@ -41,8 +46,11 @@ const DESTINATIONS: ReadonlyArray<{
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
+/** rounded-md, not rounded-xs: specs/015-dashboard-redesign.md §3.5's step up
+ *  in visual weight, kept inside the "dense content" radius band
+ *  (docs/design-system.md §3 — rounded-lg+ is floated/artwork only). */
 const ITEM_CLASS =
-  "flex items-center gap-3 rounded-xs px-3 py-2 text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
+  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
 
 /** Hidden when the rail is collapsed, still readable by assistive tech. */
 const LABEL_CLASS =
@@ -56,6 +64,14 @@ export function Sidebar() {
     >
       <div className="sticky top-(--nav-height) flex h-[calc(100dvh-var(--nav-height))] flex-col justify-between overflow-hidden p-3">
         <nav aria-label="Workspace">
+          {/* Second entry point to the same createProject mutation the
+              dashboard's hero CTA calls — specs/015-dashboard-redesign.md
+              §3.5. No new capability, and no store: identical to that CTA's
+              own "no query behind it" treatment. */}
+          <div className="mb-3 group-data-[sidebar=collapsed]/shell:hidden">
+            <NewProjectButton label="New Project" variant="outline" />
+          </div>
+
           <ul className="space-y-1">
             {DESTINATIONS.map(({ href, label, icon: Icon }) => (
               <li key={href}>

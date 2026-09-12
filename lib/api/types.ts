@@ -56,7 +56,9 @@ export interface PresetInput {
 export interface ApiClient {
   listProjects(options?: ListProjectsOptions): Promise<Project[]>;
   getProject(id: string): Promise<Project>;
-  createProject(): Promise<Project>;
+  /** `name` is trimmed by the caller; an empty or omitted name keeps the
+   *  adapter's own default ("Untitled project"). */
+  createProject(name?: string): Promise<Project>;
 
   /**
    * Not in docs/data-model.md's interface — see the note on `DashboardStats`.
