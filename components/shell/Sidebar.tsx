@@ -7,12 +7,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { ProfileMenu } from "@/components/shell/ProfileMenu";
 import { SidebarToggle } from "@/components/shell/SidebarToggle";
-import { SignOutButton } from "@/components/shell/SignOutButton";
 import { NewProjectButton } from "@/components/shared/NewProjectButton";
 
 /**
- * The workspace sidebar. Server Component; only the collapse toggle is client.
+ * The workspace sidebar. Server Component; the collapse toggle and the
+ * account menu (`ProfileMenu`) are the client leaves.
  *
  * Destinations are the ones specs/001 resolved to real routes. Templates,
  * Reports and Videos were deliberately not built — Templates because video and
@@ -28,8 +29,21 @@ import { NewProjectButton } from "@/components/shared/NewProjectButton";
  *
  * Settings is deliberately not one of the footer links (specs/015 §13) — it
  * moved to the third item of the dashboard hero's "+" menu
- * (`components/dashboard/DashboardHeader.tsx`). The footer keeps only the
- * collapse toggle and sign-out, neither of which has anywhere else to live.
+ * (`components/dashboard/DashboardHeader.tsx`). The footer's own sign-out
+ * icon moved too (specs/015 §15): it is now inside `ProfileMenu`, alongside
+ * the theme picker, behind one avatar + name trigger. The footer keeps only
+ * that and the collapse toggle.
+ *
+ * `accountName` arrives as a prop, read by `ShellLayout`
+ * (`app/(app)/(shell)/layout.tsx`) via `getCurrentAccount()`, the same shape
+ * `DashboardHeader` already uses — not read here directly. Two reasons: this
+ * component is unit-tested with a synchronous `render()`, which cannot
+ * execute an `async` Server Component the way Next's own renderer can; and
+ * keeping the DB read at the layout is one call, not one per leaf, dressed up
+ * as a `cache()` memoisation. (That read now runs for every `(shell)` route,
+ * not just `/dashboard` — see `ShellLayout`'s own comment for why that
+ * tradeoff is a direct consequence of the sidebar showing a real name on
+ * every page, not an oversight.)
  *
  * Width comes from --sidebar-width, which the pre-paint script in the root
  * layout has already resolved. The active route is *documented* as a neutral
@@ -60,7 +74,7 @@ const ITEM_CLASS =
 const LABEL_CLASS =
   "truncate group-data-[sidebar=collapsed]/shell:sr-only";
 
-export function Sidebar() {
+export function Sidebar({ accountName }: { accountName: string | null }) {
   return (
     <aside
       id="workspace-sidebar"
@@ -88,9 +102,11 @@ export function Sidebar() {
           </ul>
         </nav>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-3 group-data-[sidebar=collapsed]/shell:flex-col">
-          <SidebarToggle />
-          <SignOutButton />
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <ProfileMenu name={accountName} />
+          <div className="group-data-[sidebar=collapsed]/shell:flex group-data-[sidebar=collapsed]/shell:justify-center">
+            <SidebarToggle />
+          </div>
         </div>
       </div>
     </aside>

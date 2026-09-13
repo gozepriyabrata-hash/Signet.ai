@@ -107,7 +107,7 @@ components/
   workflow/            ← WorkflowStepper, StepShell, JobProgressCard, AIEditableField,
                          WorkflowChrome, ProjectResumeRedirect, steps/*
   marketing/           ← landing sections + the four auth forms; never imported by (app)
-  shell/               ← Navbar, Sidebar, SidebarToggle, ThemeToggle, SignOutButton
+  shell/               ← Navbar, Sidebar, SidebarToggle, ProfileMenu
   settings/            ← PresetList/Row/Dialog, UploadPanel, the nine sections
   analytics/           ← hand-written SVG charts; no charting library (rule 6)
   campaigns/  dashboard/  projects/  shared/

@@ -65,11 +65,42 @@ These live **inside illustration and rendered product chrome only** — never on
 button, never on type, never as a surface. They are exported as tokens so
 artwork containers can reference them, and for no other reason.
 
+### A third theme — Greeny Dark
+
+`specs/015-dashboard-redesign.md` §15 added a `.greeny-dark` class alongside
+`.light`, chosen from `ProfileMenu`'s theme picker rather than the navbar's
+quick toggle (which stays a two-way light/dark switch). It does not change
+this document's direction above — dark is still the default and the
+designed-for mode; Greeny Dark is a second, user-opted-in dark palette, not a
+replacement for it. Every surface and text token sits at the same lightness
+as the dark palette; only chroma and hue move, toward green (~145 in OKLCH),
+and `--accent` is recoloured to a green that matches rather than the blue
+that reads as "AI actions only" everywhere else. `--success`/`--warning`/
+`--danger` are unchanged in every theme — they are job-state semantics, not
+part of a theme's own palette.
+
+| Token | Greeny Dark |
+|---|---|
+| `--background` | `oklch(0.180 0.014 145)` |
+| `--surface` | `oklch(0.240 0.018 145)` |
+| `--surface-raised` | `oklch(0.285 0.022 145)` |
+| `--surface-invert` | `oklch(0.977 0.020 145)` |
+| `--border` | `oklch(0.310 0.020 145)` |
+| `--foreground` | `oklch(0.935 0.030 140)` |
+| `--body-foreground` | `oklch(0.840 0.025 140)` |
+| `--muted-foreground` | `oklch(0.620 0.025 140)` |
+| `--on-invert` | `oklch(0.180 0.014 145)` |
+| `--primary` | `oklch(0.935 0.030 140)` |
+| `--primary-foreground` | `oklch(0.180 0.014 145)` |
+| `--accent` | `oklch(0.760 0.150 150)` |
+| `--accent-foreground` | `oklch(0.150 0.020 150)` |
+
 ### Paste-ready `app/globals.css`
 
 ```css
 @import "tailwindcss";
 @custom-variant light (&:is(.light *));
+@custom-variant greeny-dark (&:is(.greeny-dark *));
 
 :root {
   --background:         oklch(0.196 0.000 90);
@@ -122,6 +153,28 @@ artwork containers can reference them, and for no other reason.
   --success:            oklch(0.532 0.093 162);
   --warning:            oklch(0.546 0.111 74);
   --danger:             oklch(0.500 0.181 19);
+}
+
+.greeny-dark {
+  --background:         oklch(0.180 0.014 145);
+  --surface:            oklch(0.240 0.018 145);
+  --surface-raised:     oklch(0.285 0.022 145);
+  --surface-invert:     oklch(0.977 0.020 145);
+  --border:             oklch(0.310 0.020 145);
+
+  --foreground:         oklch(0.935 0.030 140);
+  --body-foreground:    oklch(0.840 0.025 140);
+  --muted-foreground:   oklch(0.620 0.025 140);
+  --on-invert:          oklch(0.180 0.014 145);
+
+  --primary:            oklch(0.935 0.030 140);
+  --primary-foreground: oklch(0.180 0.014 145);
+  --accent:             oklch(0.760 0.150 150);
+  --accent-foreground:  oklch(0.150 0.020 150);
+
+  --success:            oklch(0.743 0.096 164);
+  --warning:            oklch(0.751 0.130 80);
+  --danger:             oklch(0.643 0.174 13);
 }
 
 @theme inline {

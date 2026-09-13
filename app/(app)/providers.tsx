@@ -14,9 +14,14 @@ import { getQueryClient } from "@/lib/query-client";
  * cost, not an application cost.
  *
  * `attribute="class"` with `defaultTheme="dark"` matches app/globals.css: the
- * dark palette is `:root` and light is opted into by a `.light` class, so the
- * `light` class next-themes writes lands exactly where the stylesheet expects
- * it. The `dark` class it writes in dark mode matches no rule and is inert.
+ * dark palette is `:root` and light and greeny-dark are opted into by a
+ * `.light`/`.greeny-dark` class, so the class next-themes writes lands
+ * exactly where the stylesheet expects it. The `dark` class it writes in
+ * dark mode matches no rule and is inert.
+ *
+ * `themes` is listed explicitly (specs/015-dashboard-redesign.md §15) —
+ * next-themes defaults to `["light", "dark"]` when this prop is omitted, and
+ * `ProfileMenu`'s three-way picker needs "greeny-dark" enumerated here too.
  */
 export function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -26,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
+        themes={["light", "dark", "greeny-dark"]}
         enableSystem={false}
         disableTransitionOnChange
       >

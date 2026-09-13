@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/shell/Navbar";
 import { Sidebar } from "@/components/shell/Sidebar";
+import { getCurrentAccount } from "@/lib/auth/dal";
 
 /**
  * The workspace chrome — navbar and collapsible sidebar.
@@ -9,13 +10,28 @@ import { Sidebar } from "@/components/shell/Sidebar";
  * the `(focus)` group beside it can render workflow routes with no sidebar at
  * all rather than hiding one conditionally. See specs/003-dashboard.md §3.1.
  *
- * Server Component. Only the theme switch and the sidebar toggle are client.
+ * `async` now, for `getCurrentAccount()` — `Sidebar`'s footer shows the
+ * signed-in account's real name (specs/015-dashboard-redesign.md §15), and
+ * `Sidebar` renders here, once, for every `(shell)` route. Until §15,
+ * `dashboard/page.tsx` was the only place in the shell that read the session
+ * and went dynamic as a result; that read now happens here instead, which
+ * means every `(shell)` route is dynamic, not just `/dashboard`. That is a
+ * direct, accepted consequence of a real name on every page rather than an
+ * oversight — see §15 for the full reasoning. `getCurrentAccount` is wrapped
+ * in React's `cache()` (`lib/auth/dal.ts`), so `dashboard/page.tsx`'s own
+ * call for `DashboardHeader`'s greeting is still the same one memoised read,
+ * not a second query.
+ *
+ * Server Component. Only the theme switch, the sidebar toggle and the
+ * account menu are client.
  */
-export default function ShellLayout({
+export default async function ShellLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const account = await getCurrentAccount();
+
   return (
     <>
       <a
@@ -28,7 +44,7 @@ export default function ShellLayout({
       <Navbar />
 
       <div className="flex">
-        <Sidebar />
+        <Sidebar accountName={account?.name ?? null} />
         <main id="workspace-main" className="min-w-0 flex-1">
           {children}
         </main>

@@ -53,7 +53,7 @@ beforeEach(() => {
 describe("Sidebar · New Project", () => {
   it("creates a project and navigates to it, from the sidebar", async () => {
     createProject.mockResolvedValue(CREATED);
-    renderWithQuery(<Sidebar />);
+    renderWithQuery(<Sidebar accountName="Priyabrata" />);
 
     await userEvent.click(screen.getByRole("button", { name: "New Project" }));
 
@@ -62,7 +62,7 @@ describe("Sidebar · New Project", () => {
   });
 
   it("still renders the four fixed destinations", () => {
-    renderWithQuery(<Sidebar />);
+    renderWithQuery(<Sidebar accountName="Priyabrata" />);
 
     for (const label of ["Dashboard", "Projects", "Campaigns", "Analytics"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
@@ -70,10 +70,24 @@ describe("Sidebar · New Project", () => {
   });
 
   it("no longer links to Settings — that moved into the dashboard's \"+\" menu", () => {
-    renderWithQuery(<Sidebar />);
+    renderWithQuery(<Sidebar accountName="Priyabrata" />);
 
     expect(
       screen.queryByRole("link", { name: "Settings" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("passes the signed-in account's name to the footer's ProfileMenu", () => {
+    renderWithQuery(<Sidebar accountName="Priyabrata Goze" />);
+
+    expect(
+      screen.getByRole("button", { name: "Priyabrata Goze" }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to \"Account\" in the ProfileMenu when there is no name", () => {
+    renderWithQuery(<Sidebar accountName={null} />);
+
+    expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
   });
 });

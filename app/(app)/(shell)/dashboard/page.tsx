@@ -11,10 +11,12 @@ export const metadata: Metadata = { title: "Dashboard" };
  * `async` now, and dynamic (`ƒ`, not `○`) as a result: `getCurrentAccount()`
  * reads the session cookie to resolve the greeting's name. specs/003-dashboard.md
  * §3.4 named this as the expected moment for the route to go dynamic — "the
- * dashboard is expected to become dynamic the moment authentication exists" —
- * and it is scoped to this route only. `Sidebar.tsx` deliberately does not
- * make the same call, so every other `(shell)` route stays statically
- * prerendered.
+ * dashboard is expected to become dynamic the moment authentication exists."
+ * That was scoped to this route only until specs/015-dashboard-redesign.md
+ * §15 gave `Sidebar`'s footer a real account name too: `ShellLayout`
+ * (`app/(app)/(shell)/layout.tsx`) now makes the same call for every
+ * `(shell)` route, so this page's own call is a `cache()`-memoised repeat,
+ * not a second query — see that layout's comment for the full reasoning.
  *
  * The greeting itself is rendered by `DashboardHeader`, a client component:
  * the account name is correct from this server-rendered prop on first paint,

@@ -3,8 +3,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FolderPlus, Paperclip, Plus, Settings, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 
+import { useDismissibleMenu } from "@/hooks/use-dismissible-menu";
 import { api } from "@/lib/api";
 import { qk } from "@/lib/query-keys";
 import {
@@ -120,28 +121,7 @@ export function DashboardHeader({
 
   const disabled = start.isPending;
 
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    const closeIfOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (menuRef.current?.contains(target)) return;
-      if (triggerRef.current?.contains(target)) return;
-      setMenuOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setMenuOpen(false);
-      triggerRef.current?.focus();
-    };
-
-    document.addEventListener("mousedown", closeIfOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeIfOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [menuOpen]);
+  useDismissibleMenu(menuOpen, () => setMenuOpen(false), triggerRef, menuRef);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-8 px-4 text-center">

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @custom-variant light (&:is(.light *));
+@custom-variant greeny-dark (&:is(.greeny-dark *));
 
 /* ---------------------------------------------------------------------------
    Tokens. Source of truth is docs/design-system.md §1 — this block is that
@@ -83,6 +84,35 @@ html[data-sidebar="collapsed"] {
   --success:            oklch(0.532 0.093 162);
   --warning:            oklch(0.546 0.111 74);
   --danger:             oklch(0.500 0.181 19);
+}
+
+/* A third theme (specs/015-dashboard-redesign.md §15), chosen from
+   `ProfileMenu`. Same structure as the dark palette above — every surface
+   and text token at roughly the same lightness — with chroma and hue pulled
+   toward green (~145) instead of neutral, and `--accent` recoloured to match
+   rather than left as the blue that reads as "AI actions only" elsewhere.
+   `--success`/`--warning`/`--danger` are untouched: they are semantic job
+   states, not part of the theme's own palette. */
+.greeny-dark {
+  --background:         oklch(0.180 0.014 145);
+  --surface:            oklch(0.240 0.018 145);
+  --surface-raised:     oklch(0.285 0.022 145);
+  --surface-invert:     oklch(0.977 0.020 145);
+  --border:             oklch(0.310 0.020 145);
+
+  --foreground:         oklch(0.935 0.030 140);
+  --body-foreground:    oklch(0.840 0.025 140);
+  --muted-foreground:   oklch(0.620 0.025 140);
+  --on-invert:          oklch(0.180 0.014 145);
+
+  --primary:            oklch(0.935 0.030 140);
+  --primary-foreground: oklch(0.180 0.014 145);
+  --accent:             oklch(0.760 0.150 150);
+  --accent-foreground:  oklch(0.150 0.020 150);
+
+  --success:            oklch(0.743 0.096 164);
+  --warning:            oklch(0.751 0.130 80);
+  --danger:             oklch(0.643 0.174 13);
 }
 
 @theme inline {

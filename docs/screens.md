@@ -180,7 +180,8 @@ the dashboard and a workflow step is still a client-side transition. See
 `specs/003-dashboard.md` §3.1.
 
 Top navbar plus a collapsible left sidebar. Server Component; only the sidebar
-toggle and theme switch are client.
+toggle, the navbar's quick theme switch, and the footer's `ProfileMenu` are
+client.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -192,7 +193,8 @@ toggle and theme switch are client.
 │  Campaigns   │  │                                          │
 │  Analytics   │  │                                          │
 │  ───────     │  │                                          │
-│  «  ⎋        │  │                                          │
+│  🙂 Priya…   │  │                                          │
+│  «           │  │                                          │
 └──────────────┘  └──────────────────────────────────────────┘
 ```
 
@@ -218,10 +220,23 @@ this product either.
   capability.
 - **Settings is not a footer link here** (`specs/015-dashboard-redesign.md`
   §13) — it moved to the third item of the dashboard hero's "+" menu (see
-  below). The footer keeps only the collapse toggle and sign-out, since
-  neither has anywhere else to live. This means Settings is reachable only
-  from `/dashboard` inside the workspace shell — there is no persistent link
-  to it from `/projects`, `/campaigns` or `/analytics`.
+  below). This means Settings is reachable only from `/dashboard` inside the
+  workspace shell — there is no persistent link to it from `/projects`,
+  `/campaigns` or `/analytics`.
+- **The footer's sign-out icon is gone too** (`specs/015-dashboard-redesign.md`
+  §15), folded into `ProfileMenu` — an avatar-and-name trigger showing the
+  signed-in account's real name. The footer now holds only that and the
+  collapse toggle. `ProfileMenu`'s menu opens *upward*, unlike the dashboard
+  hero's "+" menu, because this trigger sits at the bottom of the viewport
+  rather than near the top of a card.
+- **Opening it shows "Theme" and "Sign out"** — not the theme options
+  themselves (`specs/015-dashboard-redesign.md` §16). Tapping "Theme" reveals
+  a row of three colour swatches (Light, Dark, Greeny Dark) in its place: a
+  solid circle in that theme's own colour for the other two, and a bordered
+  circle holding a checkmark, not a colour fill, for whichever is active —
+  the active swatch's own colour would otherwise be near-invisible against
+  the menu's background in at least one of the three themes. Choosing a
+  swatch applies it and closes the whole menu.
 
 Data: none. Sidebar collapse state lives in the `ui-store` Zustand slice,
 persisted to `localStorage`.

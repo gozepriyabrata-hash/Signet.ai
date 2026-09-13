@@ -720,3 +720,202 @@ changed. Verified: `npm run typecheck` passes and `DashboardHeader.test.tsx`
 (14/14, unaffected by a class-name-only change) passes; checked visually in
 a running `next dev` session that the menu now renders below the "+" without
 overlapping the heading.
+
+## 15. Addendum — a Profile control in the sidebar footer, with a theme picker
+
+The next instruction, given a screenshot of the sidebar footer as it stood
+after §13 (just the collapse toggle and a plain sign-out icon), asked for a
+"Profile button" there instead — one that shows the account's name and, when
+opened, offers sign-out and a theme changer "like dark, light, greeny-dark."
+This is a new control, not a rename of an existing one: nothing before this
+showed the signed-in account's name anywhere in the workspace shell, and
+"greeny-dark" is a theme this app had no palette for.
+
+**What changed, by file:**
+
+- **`components/shell/ProfileMenu.tsx`** (new) — a client component: an
+  avatar (initials, or a `User` icon with no name) plus the account's name as
+  the trigger, opening a hand-rolled menu (same shape as `DashboardHeader`'s
+  "+" menu) with a `role="group"` of three `role="menuitemradio"` theme
+  buttons — Light, Dark, Greeny Dark, checked-marked by `next-themes`'
+  current `theme` — and a `role="menuitem"` "Sign out", a plain
+  `<form action={logoutAction}>` submit button (the same Server Action and
+  the same form-action shape `SignOutButton` used).
+- **`components/shell/SignOutButton.tsx`** — deleted. Its one caller
+  (`Sidebar`'s footer) now renders `ProfileMenu` instead, which reimplements
+  the same `<form action={logoutAction}>` inline as one of its menu items;
+  keeping the old component around with no caller would be dead code.
+- **`components/shell/Sidebar.tsx`** — the footer is now `ProfileMenu` plus
+  `SidebarToggle`, stacked, instead of `SidebarToggle` and `SignOutButton`
+  side by side. `Sidebar` gained an `accountName: string | null` prop rather
+  than calling `getCurrentAccount()` itself — see the next point for why.
+- **`app/(app)/(shell)/layout.tsx`** — now `async`, calling
+  `getCurrentAccount()` and passing `accountName` down to `Sidebar`. Two
+  reasons this lives here and not inside `Sidebar.tsx` directly, both
+  recorded in that file's own comment: (1) `Sidebar.test.tsx` renders
+  `Sidebar` with a plain, synchronous `render()`, which cannot execute an
+  `async` Server Component the way Next's own RSC renderer can — only
+  `page.tsx` files in this repo were ever `async`, and none of those are
+  unit-tested directly; (2) it keeps the DB read to one call per request
+  (`getCurrentAccount` is `cache()`-wrapped in `lib/auth/dal.ts`, so
+  `dashboard/page.tsx`'s own call for `DashboardHeader`'s greeting is the
+  same memoised read, not a second query).
+- **The consequence, stated plainly, the same way §13 stated its own.**
+  `dashboard/page.tsx`'s comment used to say `Sidebar.tsx` "deliberately does
+  not make the same call, so every other `(shell)` route stays statically
+  prerendered" — true before this addendum, false after it. Showing the
+  real account name in a footer that renders on every `(shell)` route
+  requires a session read on every `(shell)` route, so `/projects`,
+  `/campaigns`, `/analytics` and every `/settings/*` page all go dynamic
+  now, not just `/dashboard`. Nothing was asked about preserving static
+  rendering, and no rule in `CLAUDE.md` requires it, so this is accepted as
+  the direct cost of the feature rather than something to route around
+  (e.g. showing the name only on `/dashboard` and "Account" everywhere else,
+  which nobody asked for and would be a worse, inconsistent control). Both
+  `dashboard/page.tsx` and `app/(app)/(shell)/layout.tsx` have this recorded
+  in their own comments now, not just here.
+- **`hooks/use-dismissible-menu.ts`** (new) — the outside-click/Escape
+  dismissal `DashboardHeader`'s "+" menu (§12) implemented inline is now a
+  shared hook, since `ProfileMenu` needed the identical behaviour: close on
+  an outside `mousedown` or Escape, refocus the trigger on Escape, listeners
+  attached only while open. `DashboardHeader` was refactored to call it too,
+  rather than leaving two copies of the same effect — one `useEffect` block
+  turning into a one-line hook call in both places, with no behaviour change
+  (`DashboardHeader.test.tsx` passes unchanged).
+- **`hooks/use-has-mounted.ts`** (new) — `ThemeToggle`'s local
+  `useHasMounted`, extracted for the same reason: `ProfileMenu` needs the
+  identical "don't render theme-dependent state before the client has
+  mounted" gate to avoid a hydration mismatch on its active-theme checkmark.
+  `ThemeToggle` now imports the shared version; its own behaviour is
+  unchanged.
+- **`app/globals.css`, `docs/design-system.md` §1** — a third theme,
+  `.greeny-dark`, added alongside `.light` following the exact structure of
+  the existing dark palette (every token at the same lightness, chroma and
+  hue shifted toward green, `--accent` recoloured to match rather than kept
+  as the blue every other theme uses). `--success`/`--warning`/`--danger`
+  are untouched in every theme, since they are job-state semantics rather
+  than part of a theme's own palette. This does not change
+  `docs/design-system.md`'s stated direction ("dark ... is the designed-for
+  and default page mode") — Greeny Dark is a second, opt-in dark palette a
+  user reaches through `ProfileMenu`, not a new default.
+- **`app/(app)/providers.tsx`** — `ThemeProvider` now takes an explicit
+  `themes={["light", "dark", "greeny-dark"]}`; next-themes defaults to just
+  `["light", "dark"]` when this prop is omitted, and `ProfileMenu`'s menu
+  needs "greeny-dark" enumerated there too. `ThemeToggle` (the navbar's
+  quick switch) is deliberately left as a two-way light/dark toggle rather
+  than taught to cycle through three states — it is the fast path for the
+  common case, and the full picker already lives one control away in
+  `ProfileMenu`.
+
+**What did not change.** The theme state itself is still owned entirely by
+`next-themes` (no new Zustand slice, matching CLAUDE.md rule 3 — UI
+preferences that are already a browser-storage concern do not need a second
+home). `logoutAction` and its redirect are untouched. `Sidebar`'s four fixed
+destinations, `NewProjectButton`, and the workflow-hides-sidebar behaviour
+are all unaffected.
+
+**Tests.** `components/shell/ProfileMenu.test.tsx` (new) covers: the
+trigger's name/initials and its "Account" fallback with no name, the menu
+being closed until opened, all three theme items and Sign out appearing,
+the active theme's `aria-checked`, choosing a theme calling `setTheme` and
+closing the menu, choosing Sign out calling `logoutAction`, and Escape
+closing without side effects. `Sidebar.test.tsx` was updated to pass the new
+`accountName` prop and gained two tests: the name reaching `ProfileMenu`,
+and the "Account" fallback with no name. Verified: `npm run typecheck`,
+`npm run lint`, and both files' tests pass; checked visually in a running
+`next dev` session in all three themes — the footer shows the avatar and
+name, opening it shows the three theme options (the active one checked) and
+Sign out, and choosing each theme repaints the whole app immediately.
+
+## 16. Addendum — the theme picker becomes three colour swatches behind "Theme"
+
+Two follow-on instructions refined §15's theme picker, each pointing at a
+screenshot of the previous attempt. The first: the text rows ("Light",
+"Dark", "Greeny Dark" with a checkmark) should instead be "three color
+button[s]" — the reference showed a chat product's own theme control, a row
+of small solid-colour circles. The second, after that landed exactly as a
+row of three colour-filled circles inside the account menu, alongside
+"Sign out": "not like this ... create [a] theme change button and when
+user tap this button then show like this" — a screenshot of just the
+three-circle row, isolated, implying the row should not sit permanently in
+the account menu but appear only once summoned by its own control.
+
+**What changed, in order.**
+
+1. The three `menuitemradio` text rows became three `size-8` circular
+   buttons in a centred row, each filled with that theme's own
+   `--background` and ringed with that theme's own `--accent` — literal
+   OKLCH values, not tokens, because a swatch's job is to show a theme that
+   is not necessarily the *active* one, and `--background`/`--accent` only
+   ever resolve to whichever theme is currently active. These are the one
+   narrow, documented exception to CLAUDE.md rule 6 in this file; they are
+   commented in `ProfileMenu.tsx` as needing to be kept in sync by hand with
+   `app/globals.css`.
+2. A `menuitem` named "Theme" (a `Palette` icon, matching "Sign out"'s own
+   `LogOut` icon) replaced the always-visible swatch row at the top of the
+   menu. Tapping it toggles a `themeOpen` boolean; the swatch row now renders
+   only while that is true, in the same position, pushing "Sign out" down
+   rather than opening a separate popover — no second floating layer, no new
+   positioning math, and `useDismissibleMenu`'s existing outside-click/Escape
+   handling already covers it since it is still inside `menuRef`'s subtree.
+   Closing the account menu (outside click, Escape, or choosing Sign out)
+   also resets `themeOpen`, via a shared `closeAll` that replaces the
+   trigger's plain `setOpen` toggle — so reopening the account menu always
+   starts with the swatch row collapsed, never stuck open from last time.
+3. **The active swatch stopped being colour-filled.** Filling the active
+   swatch with its own `--background` and drawing a checkmark on top reads
+   fine for Dark and Greeny Dark, both near-black, but Light's `--background`
+   is near-white — a white checkmark (or a dark one) on a near-white circle
+   sitting on the menu's own dark `surface-raised` is exactly the kind of
+   contrast failure rule 10's 4.5:1 floor exists to catch. The reference
+   screenshot's own active swatch showed a hollow, ringed circle with just a
+   checkmark, no fill — which sidesteps the problem entirely rather than
+   picking a checkmark colour that happens to work. Active swatches now
+   render with no `backgroundColor` (transparent, showing the menu's own
+   background through), keeping only the `--accent`-coloured ring and a
+   checkmark tinted with a per-theme `check` colour chosen for contrast
+   against *that* transparency, not against the swatch's own fill.
+
+**What did not change.** The three theme values, `next-themes`'
+`setTheme`/`theme`, `useDismissibleMenu`, and Sign out's own `logoutAction`
+form are all untouched — this addendum is entirely about how the same three
+choices are revealed and drawn, not what they do.
+
+**Tests.** `ProfileMenu.test.tsx` was updated rather than extended: the
+"offers all three themes" test now asserts the swatches are *absent* until
+"Theme" is tapped, a new test confirms tapping "Theme" reveals them, and the
+active-theme and choose-a-theme tests each gained a "Theme" tap before
+asserting on the `menuitemradio`s underneath it. Verified: `npm run
+typecheck`, `npm run lint`, and the full file (8/8) pass; checked visually
+in a running `next dev` session in all three themes — the account menu opens
+to just "Theme" and "Sign out", tapping "Theme" reveals the three swatches
+with the active one shown as a hollow checkmark badge rather than a filled
+circle, and choosing a swatch repaints the app and closes the whole menu.
+
+## 17. Addendum — the navbar's quick theme toggle removed
+
+§15 kept `ThemeToggle`, the navbar's light/dark switch, deliberately — "the
+fast path for the common case" alongside `ProfileMenu`'s fuller picker. The
+next instruction, given a screenshot of the navbar's "Light" label, asked
+for that button removed outright. With §16's swatch picker now two taps
+away instead of a text-list scroll, the "fast path" justification §15 gave
+no longer holds, and a second control for the same setting — one that could
+only ever represent two of the three themes — is a duplicate surface rather
+than a convenience.
+
+`components/shell/ThemeToggle.tsx` is deleted (no other caller — a repo-wide
+search confirmed it). `Navbar.tsx` drops the `<ThemeToggle />` import and
+the now-empty right-hand `flex` wrapper it sat in, leaving the logo as the
+navbar's only content; `CLAUDE.md`'s `components/shell/` folder listing is
+updated to match (`ThemeToggle` and `SignOutButton`, both gone, replaced
+with `ProfileMenu`). `hooks/use-has-mounted.ts` stays — `ProfileMenu` still
+uses it — even though `ThemeToggle` was its other caller until now; a
+one-caller hook is not a reason to inline it back, since the whole point of
+extracting it in §15 was that this exact "gate on mount before reading
+theme" need was going to recur.
+
+No test covered `ThemeToggle` or the navbar's right-hand content, so nothing
+needed updating there. Verified: `npm run typecheck` and `npm run lint`
+pass; checked visually in a running `next dev` session that the navbar now
+shows only "Signet" and theme switching still works, exclusively through
+`ProfileMenu`.
