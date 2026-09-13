@@ -61,11 +61,19 @@ describe("Sidebar · New Project", () => {
     expect(push).toHaveBeenCalledWith("/projects/prj_new123");
   });
 
-  it("still renders the five fixed destinations", () => {
+  it("still renders the four fixed destinations", () => {
     renderWithQuery(<Sidebar />);
 
-    for (const label of ["Dashboard", "Projects", "Campaigns", "Analytics", "Settings"]) {
+    for (const label of ["Dashboard", "Projects", "Campaigns", "Analytics"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
+  });
+
+  it("no longer links to Settings — that moved into the dashboard's \"+\" menu", () => {
+    renderWithQuery(<Sidebar />);
+
+    expect(
+      screen.queryByRole("link", { name: "Settings" }),
+    ).not.toBeInTheDocument();
   });
 });

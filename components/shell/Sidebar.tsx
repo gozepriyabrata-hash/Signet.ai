@@ -3,7 +3,6 @@ import {
   FolderOpen,
   LayoutDashboard,
   Megaphone,
-  Settings,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +25,11 @@ import { NewProjectButton } from "@/components/shared/NewProjectButton";
  * The label stays in the DOM and is hidden with `sr-only`, so the link keeps
  * its accessible name at both widths and no `aria-label` has to be maintained
  * in parallel with the visible text.
+ *
+ * Settings is deliberately not one of the footer links (specs/015 §13) — it
+ * moved to the third item of the dashboard hero's "+" menu
+ * (`components/dashboard/DashboardHeader.tsx`). The footer keeps only the
+ * collapse toggle and sign-out, neither of which has anywhere else to live.
  *
  * Width comes from --sidebar-width, which the pre-paint script in the root
  * layout has already resolved. The active route is *documented* as a neutral
@@ -85,10 +89,6 @@ export function Sidebar() {
         </nav>
 
         <div className="flex items-center justify-between gap-2 border-t border-border pt-3 group-data-[sidebar=collapsed]/shell:flex-col">
-          <Link href="/settings" className={ITEM_CLASS}>
-            <Settings aria-hidden="true" className="size-4 shrink-0" />
-            <span className={LABEL_CLASS}>Settings</span>
-          </Link>
           <SidebarToggle />
           <SignOutButton />
         </div>

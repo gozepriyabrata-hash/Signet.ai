@@ -192,7 +192,7 @@ toggle and theme switch are client.
 │  Campaigns   │  │                                          │
 │  Analytics   │  │                                          │
 │  ───────     │  │                                          │
-│  Settings    │  │                                          │
+│  «  ⎋        │  │                                          │
 └──────────────┘  └──────────────────────────────────────────┘
 ```
 
@@ -216,6 +216,12 @@ this product either.
   (`specs/015-dashboard-redesign.md` §3.5) — a second entry point to the same
   `createProject` mutation the dashboard's hero CTA calls, not a new
   capability.
+- **Settings is not a footer link here** (`specs/015-dashboard-redesign.md`
+  §13) — it moved to the third item of the dashboard hero's "+" menu (see
+  below). The footer keeps only the collapse toggle and sign-out, since
+  neither has anywhere else to live. This means Settings is reachable only
+  from `/dashboard` inside the workspace shell — there is no persistent link
+  to it from `/projects`, `/campaigns` or `/analytics`.
 
 Data: none. Sidebar collapse state lives in the `ui-store` Zustand slice,
 persisted to `localStorage`.
@@ -236,7 +242,12 @@ persisted to `localStorage`.
        │ [ report to begin.  (typed text here)  ] │    
        │  📎 report.pdf ✕                         │    
        │                                           │    
-       │  +                    [ Start a new… ]   │    
+       │  +                                        │    
+       │  ┌─────────────────────────┐              │    
+       │  │ 📎  Add files or photos │  (on click)  │    
+       │  │ 📁  Start a new project │              │    
+       │  │ ⚙  Settings            │              │    
+       │  └─────────────────────────┘              │    
        └─────────────────────────────────────────┘    
                                                         
                                                         
@@ -253,13 +264,18 @@ this one *is* the entire page.
 
 **The top line is a real, typable field** (`specs/015` §11) — typed text
 becomes the new project's `name`, via one new optional argument on
-`ApiClient.createProject`. **The "+" is a real, accessible file-attach
-control**, not decoration — clicking or tabbing to it opens a file picker,
-and the card is also a drop target, both sharing the exact validation
-`ReportStep`'s own dropzone uses (`lib/report-validation.ts`). If a file is
-attached, "Start a new project" creates the project, uploads the file as its
-report through the same mutation `ReportStep` calls, and lands on the resume
-route already mid-parse.
+`ApiClient.createProject`. **The "+" opens a menu** (`specs/015` §12, §13)
+rather than acting as the file input itself — "Add files or photos", "Start
+a new project" and "Settings" are its three items. Choosing "Add files or
+photos" opens the native file picker (the card is also a drop target, both
+sharing the exact validation `ReportStep`'s own dropzone uses —
+`lib/report-validation.ts`); choosing "Start a new project" does what
+pressing Enter in the name field already does. If a file is attached first,
+"Start a new project" creates the project, uploads the file as its report
+through the same mutation `ReportStep` calls, and lands on the resume route
+already mid-parse. Choosing "Settings" navigates to `/settings` — the
+Sidebar's own Settings link was removed in the same change (§13), so this
+menu is now Settings' only entry point from inside the workspace shell.
 
 **What typing here does not do:** the text is a name, not a request — it is
 not read for meaning, summarised, or handed to any model. There is no

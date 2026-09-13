@@ -608,3 +608,115 @@ the invalid-file test exercises the drop handler instead). Verified:
 checked visually in a running `next dev` session — typing, submitting with
 no file, and submitting with an attached PDF all reach `/projects/{id}` with
 the typed name visible in the `/projects` list afterwards.
+
+## 12. Addendum — the "+" opens a menu instead of sharing the row with the button
+
+§11 put two controls on the card's bottom row: the "+" file-attach control on
+the left, "Start a new project" pinned on the right. The next instruction,
+given two reference screenshots of a chat product's own composer (a "+" next
+to the message field that, on click, reveals an "Add files or photos" row),
+asked for that interaction specifically — collapse the row's two actions
+behind the single "+", opened as a menu, with "Start a new project" as its
+second item and the standalone button removed. That is a request about this
+row's interaction shape, not about what the card is for; §11's boundary
+(typed text is a name, not a request; no `Conversation` type; no AI reads
+this field) is untouched.
+
+**What changed.** The "+" is now a real `<button type="button">` with
+`aria-haspopup="menu"` / `aria-expanded`, no longer the file input's own
+`<label>`. Clicking it toggles a `role="menu"` popover, positioned below the
+button (`absolute top-full`; see §14 for why this replaced an initial
+above-the-button placement). The
+menu holds two `role="menuitem"` buttons: "Add files or photos" (calls
+`inputRef.current?.click()` on the same hidden `<input type="file">` §11
+already wired up, now associated by `id`/`htmlFor` instead of by wrapping)
+and "Start a new project" (calls the same `start.mutate()` the name field's
+Enter handler already called). Selecting either item, clicking outside the
+menu, or pressing Escape closes it — the last two via one `mousedown` /
+`keydown` listener pair attached to `document` only while the menu is open,
+removed on close or unmount. Escape also returns focus to the trigger, so
+keyboard use never drops focus into the page body.
+
+**Why a hand-rolled popover instead of a library.** No popover or
+dropdown-menu primitive is vendored into `components/ui/` and no Radix
+package beyond `react-slot` is a dependency (`package.json`) — this is one
+trigger, one two-item list, and no nested submenus, focus trap, or portal
+requirement, well inside what `docs/design-system.md`'s "CSS only, no motion
+library" precedent already sets for this codebase's default: reach for a
+dependency when a keyframe (or, here, a `useEffect` and two DOM listeners)
+cannot express the interaction, not before.
+
+**What did not change.** `ApiClient.createProject`'s signature, the upload
+mutation's shape, `lib/report-validation.ts`, the drop-zone behaviour, and
+the accessible name "Start a new project" the button carried before all
+carry over unchanged — only where that control lives moved.
+`DashboardHeader.test.tsx` was updated to open the menu (click "Add to this
+project") before asserting on the "Start a new project" `menuitem`, plus new
+cases for the menu's own open/closed state, the file-picker handoff, and
+Escape-to-close. Verified: `npm run typecheck` and the full
+`DashboardHeader.test.tsx` suite (13/13) pass; checked visually in a running
+`next dev` session in both themes — opening the menu, choosing each item,
+clicking outside, and Escape all behave as described.
+
+## 13. Addendum — Settings moves from the sidebar footer into the "+" menu
+
+The next instruction, given a screenshot of `Sidebar`'s footer, asked for its
+"Settings" link removed from there and added as a third item in the "+" menu
+§12 had just built — "when user tap[s] the + icon button ... show total 3
+options." §12's menu already had exactly the right shape for a third item
+(one more `role="menuitem"` button), so this is an extension of §12, not a
+reopening of it.
+
+**What changed.** `components/shell/Sidebar.tsx` no longer renders a
+`Settings` link — the footer row now holds only `SidebarToggle` and
+`SignOutButton`. `DashboardHeader`'s menu gained a third `menuitem`,
+"Settings", which calls `router.push("/settings")` and closes the menu, the
+same shape as the other two items. Because the trigger button and the menu's
+own `aria-label` were named "Add to this project" for a two-item, both-
+additive menu, and "Settings" is neither additive nor project-scoped, both
+were renamed to "More options" — the accessible name a screen-reader user
+hears no longer overpromises what the menu contains.
+
+**The consequence, stated plainly because it is a real one.** Before this
+addendum, Settings was reachable from every page under `(shell)` via the
+persistent sidebar footer. After it, the only persistent path to `/settings`
+from inside the workspace is the dashboard hero's "+" menu — which only
+renders on `/dashboard`. A user on `/projects`, `/campaigns` or `/analytics`
+has no sidebar link, navbar link, or menu to reach Settings from; they would
+need to navigate to the dashboard first. This was not asked to be solved
+(no "and also keep a link somewhere else" was said), and nothing in `docs/`
+or the non-negotiable rules requires Settings to be reachable from every
+screen, so this addendum does not invent a second entry point beyond the one
+requested. It is recorded here, rather than silently accepted, so that a
+future instruction to restore broader Settings reachability is a two-line
+diff against a documented decision, not an undiscovered regression.
+
+**What did not change.** `/settings` and its nine sections, the settings
+sub-navigation, `revalidatePresetsAction`, and every other route under
+`(shell)` are untouched — only the link's location moved.
+`Sidebar.test.tsx`'s "renders the five fixed destinations" test became "four
+fixed destinations" (Settings dropped) plus a new test asserting no
+`Settings` link renders; `DashboardHeader.test.tsx` gained a "Settings"
+assertion in the three-item menu-contents test and a new test that choosing
+it calls `router.push("/settings")` and closes the menu. Verified: `npm run
+typecheck`, `npm run lint`, and both components' test files pass; checked
+visually in a running `next dev` session in both themes — the sidebar footer
+now shows only the collapse toggle and sign-out, and the "+" menu's third
+item navigates to `/settings`.
+
+## 14. Addendum — the menu opens downward, not upward
+
+§12 opened the menu above the "+" (`absolute bottom-full`), reasoned as
+avoiding an off-screen drop below the card. With three items instead of two
+(§13), that placement instead overlapped the "Good morning" heading and the
+top of the card itself — shown, not described, in the next instruction's
+screenshot, followed by "its not looking good ... show this Properly." The
+fix is a one-line direction flip: `absolute top-full` with `mt-2` instead of
+`bottom-full` with `mb-2`, so the menu now drops below the button into the
+empty space beneath the card, the same direction the reference screenshots
+in §12 (a chat composer's own "+") used to begin with. Nothing else about
+the menu — its contents, closing behaviour, or accessibility attributes —
+changed. Verified: `npm run typecheck` passes and `DashboardHeader.test.tsx`
+(14/14, unaffected by a class-name-only change) passes; checked visually in
+a running `next dev` session that the menu now renders below the "+" without
+overlapping the heading.

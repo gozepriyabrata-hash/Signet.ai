@@ -93,7 +93,10 @@ describe("DashboardHeader · starting a project", () => {
     renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Start a new project" }),
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Start a new project" }),
     );
 
     await waitFor(() =>
@@ -112,7 +115,10 @@ describe("DashboardHeader · starting a project", () => {
       "Q4 renewal brief",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Start a new project" }),
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Start a new project" }),
     );
 
     await waitFor(() =>
@@ -141,7 +147,10 @@ describe("DashboardHeader · starting a project", () => {
     expect(await screen.findByText("report.pdf")).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Start a new project" }),
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Start a new project" }),
     );
 
     await waitFor(() => expect(uploadReport).toHaveBeenCalledWith("prj_new123", file));
@@ -196,12 +205,85 @@ describe("DashboardHeader · starting a project", () => {
     renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Start a new project" }),
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Start a new project" }),
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Could not start the project.",
     );
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("DashboardHeader · the \"+\" menu", () => {
+  it("is closed until the trigger is clicked, and offers all three actions", async () => {
+    renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
+
+    expect(
+      screen.queryByRole("menuitem", { name: "Add files or photos" }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "More options" }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", { name: "Add files or photos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Start a new project" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Settings" }),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to /settings and closes when 'Settings' is chosen", async () => {
+    renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
+
+    expect(push).toHaveBeenCalledWith("/settings");
+    expect(
+      screen.queryByRole("menuitem", { name: "Settings" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the file picker and closes when 'Add files or photos' is chosen", async () => {
+    renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Add files or photos" }),
+    );
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(
+      screen.queryByRole("menuitem", { name: "Add files or photos" }),
+    ).not.toBeInTheDocument();
+    clickSpy.mockRestore();
+  });
+
+  it("closes on Escape without starting a project", async () => {
+    renderWithQuery(<DashboardHeader accountName="Priyabrata" />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "More options" }),
+    );
+    await userEvent.keyboard("{Escape}");
+
+    expect(
+      screen.queryByRole("menuitem", { name: "Start a new project" }),
+    ).not.toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
   });
 });

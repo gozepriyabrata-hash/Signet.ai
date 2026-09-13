@@ -1,11 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Paperclip, Plus, X } from "lucide-react";
+import { FolderPlus, Paperclip, Plus, Settings, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { qk } from "@/lib/query-keys";
 import {
@@ -62,6 +61,17 @@ function getServerSnapshot(): null {
  * (`api.uploadReport`) `ReportStep` already calls, once the project exists to
  * upload it to. There is no interpretation step, no `Conversation` type and
  * no new AI call — see §11 for the boundary this stops short of, and why.
+ *
+ * The "+" opens a small menu rather than acting as the file input itself
+ * (§12): "Add files or photos" and "Start a new project" — the card's only
+ * two actions — live behind one control instead of two competing for the
+ * same row. Selecting either item closes the menu; the file item opens the
+ * native picker, the project item calls the same `start` mutation Enter
+ * already triggered.
+ *
+ * §13 added "Settings" as the menu's third item, navigating to `/settings`,
+ * once the same-named link was removed from `Sidebar`'s footer — this menu
+ * is now Settings' only entry point from inside the workspace shell.
  */
 export function DashboardHeader({
   accountName,
@@ -72,11 +82,14 @@ export function DashboardHeader({
   const router = useRouter();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [rejection, setRejection] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const namePart = accountName ? `, ${accountName}` : "";
   const greeting = period ? `Good ${period}${namePart}` : `Hello${namePart}`;
@@ -106,6 +119,29 @@ export function DashboardHeader({
   };
 
   const disabled = start.isPending;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const closeIfOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("mousedown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-8 px-4 text-center">
@@ -180,27 +216,83 @@ export function DashboardHeader({
           </p>
         ) : null}
 
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <label
-            className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-raised text-foreground transition-colors duration-150 ease-out hover:bg-border focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground ${
-              disabled ? "pointer-events-none opacity-50" : "cursor-pointer"
-            }`}
-          >
-            <span className="sr-only">Attach a report</span>
-            <Plus aria-hidden="true" className="size-4" />
-            <input
-              ref={inputRef}
-              type="file"
-              accept={REPORT_INPUT_ACCEPT}
-              disabled={disabled}
-              className="sr-only"
-              onChange={(event) => pickFile(event.target.files?.[0])}
-            />
+        <div className="relative mt-6">
+          <label htmlFor="dashboard-hero-file" className="sr-only">
+            Attach a report
           </label>
+          <input
+            id="dashboard-hero-file"
+            ref={inputRef}
+            type="file"
+            accept={REPORT_INPUT_ACCEPT}
+            disabled={disabled}
+            className="sr-only"
+            onChange={(event) => {
+              pickFile(event.target.files?.[0]);
+              setMenuOpen(false);
+            }}
+          />
 
-          <Button onClick={() => start.mutate()} disabled={disabled}>
-            {start.isPending ? "Starting…" : "Start a new project"}
-          </Button>
+          <button
+            ref={triggerRef}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            disabled={disabled}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-raised text-foreground transition-colors duration-150 ease-out hover:bg-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <span className="sr-only">More options</span>
+            <Plus aria-hidden="true" className="size-4" />
+          </button>
+
+          {menuOpen ? (
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label="More options"
+              className="absolute top-full left-0 z-10 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-surface-raised py-1 shadow-lg"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  inputRef.current?.click();
+                }}
+                disabled={disabled}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-light text-foreground hover:bg-border focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
+              >
+                <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+                Add files or photos
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  start.mutate();
+                }}
+                disabled={disabled}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-light text-foreground hover:bg-border focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground disabled:opacity-50"
+              >
+                <FolderPlus aria-hidden="true" className="size-4 shrink-0" />
+                {start.isPending ? "Starting…" : "Start a new project"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  router.push("/settings");
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm font-light text-foreground hover:bg-border focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground"
+              >
+                <Settings aria-hidden="true" className="size-4 shrink-0" />
+                Settings
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
