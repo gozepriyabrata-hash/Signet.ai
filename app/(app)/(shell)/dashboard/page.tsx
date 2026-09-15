@@ -3,10 +3,14 @@ import type { Metadata } from "next";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { getCurrentAccount } from "@/lib/auth/dal";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "New Chat" };
 
 /**
- * The dashboard — specs/015-dashboard-redesign.md.
+ * The dashboard — specs/015-dashboard-redesign.md. Still `/dashboard` and
+ * still this file; only the sidebar's label and the browser tab title read
+ * "New Chat" now (`components/shell/Sidebar.tsx`), because this is the
+ * landing screen after sign-in and its whole content is the hero prompt
+ * card below, not a stats overview.
  *
  * `async` now, and dynamic (`ƒ`, not `○`) as a result: `getCurrentAccount()`
  * reads the session cookie to resolve the greeting's name. specs/003-dashboard.md
@@ -23,13 +27,14 @@ export const metadata: Metadata = { title: "Dashboard" };
  * but the time-of-day half is resolved client-side after mount, because the
  * server's clock/timezone is not the visitor's (see that component's comment).
  *
- * The stat tiles, Recent Projects list and the Projects/Campaigns/Analytics
- * quick-action cards are deliberately not rendered here any more — direct
- * instructions, not a design-system inference. `StatRow`, `RecentProjects`
- * and `QuickActions` are unchanged and still exported; nothing else in the
+ * The stat tiles and Recent Projects list are deliberately not rendered here
+ * any more — direct instructions, not a design-system inference. `StatRow`
+ * and `RecentProjects` are unchanged and still exported; nothing else in the
  * app renders them, so they are dead code until either this page uses them
  * again or someone removes them outright. See specs/015-dashboard-redesign.md
- * §8, §9.
+ * §8, §9. `QuickActions`, the third component in that dead-code set, was
+ * removed outright — it existed only to link to `/campaigns` and
+ * `/analytics`, both gone from the workspace.
  *
  * No `loading.tsx` — it is a Suspense fallback for server work, and the one
  * server read here (`getCurrentAccount()`) resolves before the client

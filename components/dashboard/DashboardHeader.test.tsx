@@ -170,9 +170,8 @@ describe("DashboardHeader · starting a project", () => {
     // lib/report-validation.ts's docstring says not to rely on (MDN: accept
     // "doesn't validate the types of the selected files"). A drop bypasses
     // that filter, same as a real browser's drag-and-drop does.
-    const dropzone = screen.getByPlaceholderText(
-      "Start a new project — upload a report to begin.",
-    ).parentElement!;
+    const dropzone = screen.getByLabelText("Project name").parentElement!
+      .parentElement!;
     fireEvent.drop(dropzone, {
       dataTransfer: {
         files: [new File(["hi"], "notes.txt", { type: "text/plain" })],

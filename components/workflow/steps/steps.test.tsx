@@ -105,9 +105,9 @@ const PACKAGE: CommunicationPackage = {
 };
 
 /**
- * No `beforeEach` mock reset — see components/campaigns/CampaignDetail.test.tsx.
- * Clearing the api mock from a `beforeEach` makes a rejection it later produces
- * surface as an uncaught error rather than as the query's error state.
+ * No `beforeEach` mock reset. Clearing the api mock from a `beforeEach` makes
+ * a rejection it later produces surface as an uncaught error rather than as
+ * the query's error state.
  */
 afterEach(() => {
   vi.clearAllMocks();
@@ -363,10 +363,6 @@ describe("send is Review's confirmed state, not a route", () => {
     renderWithQuery(<ReviewStep projectId="prj_1" />);
 
     expect(await screen.findByText(/reached Ada Speke/)).toBeInTheDocument();
-    // The detail page, not the list.
-    expect(
-      screen.getByRole("link", { name: "View in Campaigns" }),
-    ).toHaveAttribute("href", "/campaigns/pkg_1");
     // And no way to send it again from here.
     expect(
       screen.queryByRole("button", { name: /Approve & Send/ }),

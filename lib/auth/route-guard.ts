@@ -4,7 +4,7 @@
  * a real request. `proxy.ts` itself stays a thin wrapper around these.
  */
 
-const PROTECTED_PREFIXES = ["/dashboard", "/projects", "/campaigns", "/analytics", "/settings"];
+const PROTECTED_PREFIXES = ["/dashboard", "/projects", "/settings"];
 const AUTH_PATHS = ["/login", "/signup"];
 
 export function isProtectedPath(pathname: string): boolean {

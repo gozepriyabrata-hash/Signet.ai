@@ -17,8 +17,6 @@ const eslintConfig = defineConfig([
       "components/workflow/**/*.{ts,tsx}",
       "components/settings/**/*.{ts,tsx}",
       "components/shared/**/*.{ts,tsx}",
-      "components/campaigns/**/*.{ts,tsx}",
-      "components/analytics/**/*.{ts,tsx}",
       "components/settings/**/*.{ts,tsx}",
       "stores/**/*.{ts,tsx}",
     ],
@@ -43,29 +41,8 @@ const eslintConfig = defineConfig([
   // `no-restricted-imports` cannot express this. `api` is what gets imported
   // and `sendPackage` is a method on it, so nothing forbidden ever appears in
   // an import statement. Matching the member access is the only way to catch
-  // it, which is why these rules are selectors rather than paths.
+  // it, which is why this rule is a selector rather than a path.
   //
-  // Two blocks rather than one, because the two trees break the rule for
-  // different reasons and a reader who hits the error deserves the right one.
-  {
-    files: [
-      "app/(app)/(shell)/campaigns/**/*.{ts,tsx}",
-      "components/campaigns/**/*.{ts,tsx}",
-    ],
-    ignores: ["**/*.test.{ts,tsx}"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector:
-            "MemberExpression[property.name=/^(sendPackage|buildPackage)$/]",
-          message:
-            "specs/005-campaigns.md §3.5: the campaign screens are read-only. Sending happens only from Review (CLAUDE.md rule 2).",
-        },
-      ],
-    },
-  },
-
   // The workflow. Every step except Review, plus everything shared between
   // them: the stepper, StepShell, JobProgressCard, AIEditableField. A send
   // button on a shared component would appear on all six steps at once.

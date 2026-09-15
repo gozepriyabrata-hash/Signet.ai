@@ -199,3 +199,20 @@ html[data-sidebar="collapsed"] {
 .generation-pulse {
   animation: generation-pulse 2s ease-in-out infinite;
 }
+
+/* ---------------------------------------------------------------------------
+   Dashboard hero placeholder cross-fade — DashboardHeader.tsx rotates the
+   hero input's placeholder copy on a timer; this is the "field reveal" row
+   of docs/design-system.md §4 (200ms, easeOut), transform + opacity only,
+   applied fresh each time React remounts the placeholder <span> on a new
+   key. The prefers-reduced-motion block above collapses it like every other
+   animation on the page.
+--------------------------------------------------------------------------- */
+@keyframes placeholder-fade {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.placeholder-fade {
+  animation: placeholder-fade 200ms ease-out;
+}

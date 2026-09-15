@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { isAuthPath, isProtectedPath } from "@/lib/auth/route-guard";
 
 describe("isProtectedPath", () => {
-  it.each(["/dashboard", "/projects", "/projects/abc123/report", "/campaigns", "/campaigns/abc", "/analytics", "/settings", "/settings/security"])(
+  it.each(["/dashboard", "/projects", "/projects/abc123/report", "/settings", "/settings/security"])(
     "protects %s",
     (path) => {
       expect(isProtectedPath(path)).toBe(true);

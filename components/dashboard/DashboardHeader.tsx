@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FolderPlus, Paperclip, Plus, Settings, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { useDismissibleMenu } from "@/hooks/use-dismissible-menu";
 import { api } from "@/lib/api";
@@ -15,6 +15,24 @@ import {
 import { useWorkflowStore } from "@/stores/workflow-store";
 
 type Period = "morning" | "afternoon" | "evening";
+
+/**
+ * Rotates through the hero input's placeholder copy — specs/015 §3.1's static
+ * line was the whole placeholder before this; now it is just the first frame.
+ * Every line stays true to what the field actually does (name a project /
+ * attach a report) rather than reaching for generic "ask me anything" chat
+ * copy, because the card is deliberately not a freeform AI chat surface (see
+ * this file's own top comment).
+ */
+const HERO_PLACEHOLDERS = [
+  "Start a new project — upload a report to begin.",
+  "Turn a report into a video worth watching.",
+  "Give it a name, or just drop a report in.",
+  "One report in — a video, an email and a send come out.",
+  "What are we turning into a message today?",
+] as const;
+
+const HERO_PLACEHOLDER_INTERVAL_MS = 3200;
 
 function periodFromHour(hour: number): Period {
   if (hour < 12) return "morning";
@@ -91,9 +109,17 @@ export function DashboardHeader({
   const [rejection, setRejection] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   const namePart = accountName ? `, ${accountName}` : "";
   const greeting = period ? `Good ${period}${namePart}` : `Hello${namePart}`;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPlaceholderIndex((index) => (index + 1) % HERO_PLACEHOLDERS.length);
+    }, HERO_PLACEHOLDER_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 
   const start = useMutation({
     mutationFn: async () => {
@@ -147,21 +173,31 @@ export function DashboardHeader({
         <label htmlFor="dashboard-hero-prompt" className="sr-only">
           Project name
         </label>
-        <input
-          id="dashboard-hero-prompt"
-          type="text"
-          value={name}
-          disabled={disabled}
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !disabled) {
-              event.preventDefault();
-              start.mutate();
-            }
-          }}
-          placeholder="Start a new project — upload a report to begin."
-          className="w-full bg-transparent text-base font-light leading-relaxed text-foreground placeholder:text-body-foreground focus:outline-none disabled:opacity-50"
-        />
+        <div className="relative">
+          <input
+            id="dashboard-hero-prompt"
+            type="text"
+            value={name}
+            disabled={disabled}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !disabled) {
+                event.preventDefault();
+                start.mutate();
+              }
+            }}
+            className="relative z-10 w-full bg-transparent text-base font-light leading-relaxed text-foreground focus:outline-none disabled:opacity-50"
+          />
+          {name ? null : (
+            <span
+              key={placeholderIndex}
+              aria-hidden="true"
+              className="placeholder-fade pointer-events-none absolute inset-0 flex items-center truncate text-base font-light leading-relaxed text-body-foreground"
+            >
+              {HERO_PLACEHOLDERS[placeholderIndex]}
+            </span>
+          )}
+        </div>
 
         {file ? (
           <div className="mt-4 flex items-center gap-2 rounded-full bg-surface-raised px-3 py-1.5 text-sm font-light text-body-foreground">

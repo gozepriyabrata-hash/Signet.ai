@@ -119,14 +119,7 @@ export function ReviewStep({ projectId }: { projectId: string }) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {/* The detail page, not the list — the user just sent this package
-                and making them find it again is a strange reward. */}
             <Button asChild>
-              <Link href={`/campaigns/${sentPackage?.id ?? ""}`}>
-                View in Campaigns
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
               <Link href="/dashboard">Back to dashboard</Link>
             </Button>
           </div>

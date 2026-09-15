@@ -1,4 +1,4 @@
-import type { AnalyticsRange, PresetKind } from "@/types";
+import type { PresetKind } from "@/types";
 
 /**
  * The query-key factory, per docs/data-model.md §3. Nothing constructs a key
@@ -23,7 +23,7 @@ export const qk = {
   usage: () => ["usage"] as const,
 
   /**
-   * One package, by its OWN id. `/campaigns/[id]` uses this.
+   * One package, by its OWN id.
    *
    * Split from `packageForProject` by specs/005 §3.2. Before the split there
    * was a single `package: (id) => ["package", id]`, which lib/query-keys.ts
@@ -40,14 +40,6 @@ export const qk = {
    *  exists. Distinct prefix so it can never be confused with the above. */
   packageForProject: (projectId: string) =>
     ["package", "for-project", projectId] as const,
-
-  /** The sent-package history behind `/campaigns`. No parameters, because the
-   *  screen has no filters (specs/005 §3.9). */
-  packages: () => ["packages"] as const,
-
-  /** Varies on the range, so switching windows is a distinct cache entry
-   *  rather than one clobbering the other. */
-  analytics: (range: AnalyticsRange) => ["analytics", range] as const,
 
   stats: () => ["stats"] as const,
 };
