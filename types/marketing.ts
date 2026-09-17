@@ -7,8 +7,13 @@
  */
 
 export interface NavAnchor {
-  /** In-page fragment, e.g. "#pricing". Pricing and Security are sections, not routes. */
-  href: `#${string}`;
+  /**
+   * An in-page fragment, e.g. "#security", or a marketing route for a nav item
+   * whose destination is a real page — "Policy" is `/legal/privacy`, which is
+   * a route (specs/013), not a section. Everything else on this page is still
+   * a section, so the fragment form stays first.
+   */
+  href: `#${string}` | `/${string}`;
   label: string;
 }
 
@@ -86,4 +91,41 @@ export interface PolicySection {
   heading: string;
   body: string;
   points?: readonly string[];
+}
+
+/**
+ * One of the two feature bands on the landing page.
+ *
+ * `body` is optional on purpose: the wireframe gives these sections a label, a
+ * heading and a visual, and no paragraph. An optional field is how the slot
+ * stays available without this file inventing prose to fill it — the same
+ * reasoning that ships `logos` and `testimonials` empty.
+ */
+export interface FeaturePanel {
+  /** Doubles as the section's anchor id, so the nav and footer can point at it. */
+  id: string;
+  /** The small eyebrow above the heading — "Avatar video generation". */
+  label: string;
+  title: string;
+  body?: string;
+  /** Reserved frame dimensions until the real artwork exists. */
+  media: { alt: string; width: number; height: number; src?: string };
+  /** Which side the visual sits on. The two bands alternate. */
+  mediaSide: "start" | "end";
+}
+
+/**
+ * A social account in the footer's bottom bar.
+ *
+ * Ships empty, like `logos` and `testimonials`: a link to an account that does
+ * not exist yet is a broken promise in the footer of a product whose whole
+ * proposition is that nothing goes out unchecked. Fill in `socials` in
+ * `_content.ts` and the row appears.
+ */
+export interface Social {
+  /** Accessible name — "LinkedIn". */
+  name: string;
+  /** The single-letter mark shown in the bar — "In". */
+  mark: string;
+  href: string;
 }

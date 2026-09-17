@@ -19,6 +19,9 @@ import type { Cta, NavAnchor } from "@/types";
  * <summary> are inconsistently exposed to screen readers. See
  * specs/002-landing-page.md §3.5 and §5.
  */
+const PANEL_LINK_CLASS =
+  "block rounded-xs px-2 py-2.5 text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
+
 export function MobileNav({
   anchors,
   cta,
@@ -63,20 +66,33 @@ export function MobileNav({
         <ul className="flex flex-col gap-1 px-6 py-4">
           {anchors.map((anchor) => (
             <li key={anchor.href}>
-              <a
-                href={anchor.href}
-                onClick={() => setOpen(false)}
-                className="block rounded-xs px-2 py-2.5 text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-              >
-                {anchor.label}
-              </a>
+              {/* A fragment is a plain <a>; a path is a next/link, so "Policy"
+                  reaches /legal/privacy as a client transition rather than a
+                  full page load. Same branch as MarketingNav. */}
+              {anchor.href.startsWith("#") ? (
+                <a
+                  href={anchor.href}
+                  onClick={() => setOpen(false)}
+                  className={PANEL_LINK_CLASS}
+                >
+                  {anchor.label}
+                </a>
+              ) : (
+                <Link
+                  href={anchor.href}
+                  onClick={() => setOpen(false)}
+                  className={PANEL_LINK_CLASS}
+                >
+                  {anchor.label}
+                </Link>
+              )}
             </li>
           ))}
           <li className="pt-2">
             <Link
               href={loginCta.href}
               onClick={() => setOpen(false)}
-              className="block rounded-xs px-2 py-2.5 text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+              className={PANEL_LINK_CLASS}
             >
               {loginCta.label}
             </Link>

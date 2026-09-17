@@ -133,6 +133,20 @@ html[data-sidebar="collapsed"] {
   --color-warning:            var(--warning);
   --color-danger:             var(--danger);
 
+  /* The artwork-only pastels (docs/design-system.md, "Artwork-only pastels").
+     They were defined in :root but never exposed as utilities, which meant the
+     only way to reach one was `bg-[var(--pastel-blue)]` — an arbitrary value,
+     and so a rule 6 violation. Exposing them here is what lets the landing
+     page's colour-grid band be written in tokens. They stay what the design
+     system says they are: illustration only, never a button, never type,
+     never a surface. */
+  --color-pastel-blue:        var(--pastel-blue);
+  --color-pastel-violet:      var(--pastel-violet);
+  --color-pastel-amber:       var(--pastel-amber);
+  --color-pastel-coral:       var(--pastel-coral);
+  --color-pastel-green:       var(--pastel-green);
+  --color-pastel-pink:        var(--pastel-pink);
+
   --radius-xs:   4px;
   --radius-sm:   6px;
   --radius-md:   8px;
@@ -215,4 +229,30 @@ html[data-sidebar="collapsed"] {
 
 .placeholder-fade {
   animation: placeholder-fade 200ms ease-out;
+}
+
+/* ---------------------------------------------------------------------------
+   Landing-page scroll-reveal — Reveal.tsx wraps each section below the hero
+   (FeatureSplit x2, SecurityNote; never Hero, which holds the LCP element
+   and specifically does not animate).
+
+   The transition lives on the base `.motion-reveal` rule, not on the
+   "[data-reveal-state='hidden']" one, and the hidden rule turns transitions
+   off outright. That split matters: when Reveal.tsx first applies
+   data-reveal-state="hidden" after mount, the element snaps to hidden with
+   no animation (nothing to see below the fold yet, so nothing should visibly
+   fade out); only the later change — the attribute being removed once
+   useInView fires — lands on the rule that carries the transition, so that
+   is the one direction that actually animates.
+--------------------------------------------------------------------------- */
+.motion-reveal {
+  transition:
+    opacity 500ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.motion-reveal[data-reveal-state="hidden"] {
+  transition: none;
+  opacity: 0;
+  transform: translateY(24px);
 }

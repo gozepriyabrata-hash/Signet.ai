@@ -1,12 +1,14 @@
 import type {
   Cta,
   FaqEntry,
+  FeaturePanel,
   FooterColumn,
   Logo,
   NavAnchor,
   PolicySection,
   PricingTier,
   ProofBlock,
+  Social,
   Step,
   Testimonial,
 } from "@/types";
@@ -21,10 +23,29 @@ import type {
  * proof" enforceable instead of aspirational.
  */
 
+/**
+ * The nav labels come from the landing-page wireframe.
+ *
+ * Two of them had no destination drawn beside them, so they point at the
+ * nearest thing that actually exists rather than at a page nobody has written:
+ * "Policy" at the published privacy policy (specs/013), "Research" at the
+ * second feature band (`features[1]`, id `clip-flow` — `how-it-works`, the
+ * first band, already belongs to the "How it works" label). "Research"
+ * pointed at the FAQ until that section was dropped from the page; specs/016
+ * §4 explicitly rejects removing the label itself just because it is
+ * inconvenient to wire, so it moved rather than disappeared. If either grows
+ * a real page later, change the href here and nowhere else.
+ *
+ * "Pricing" and "Security" are both gone from the nav — the wireframe does not
+ * have "Pricing", and "Security" lost its section on the page — and a nav
+ * anchor with no section to land on is worse than a missing link. The
+ * PricingPreview and SecurityNote components and their tests are untouched and
+ * still pass — neither section is composed into the page today.
+ */
 export const nav = [
+  { href: "#clip-flow", label: "Research" },
+  { href: "/legal/privacy", label: "Policy" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#security", label: "Security" },
 ] as const satisfies readonly NavAnchor[];
 
 /**
@@ -37,7 +58,7 @@ export const nav = [
  */
 export const primaryCta = {
   href: "/signup",
-  label: "Create a workspace",
+  label: "Get started",
 } as const satisfies Cta;
 
 /** The nav's quiet counterpart to `primaryCta` — not a second pill (design-system §1: "One per screen"). */
@@ -46,25 +67,74 @@ export const loginCta = {
   label: "Log in",
 } as const satisfies Cta;
 
-export const secondaryCta = {
-  href: "#how-it-works",
-  label: "See how it works",
+/**
+ * The nav's pill, labelled from the wireframe's top-right button.
+ *
+ * It points at `/signup`, not `/dashboard`, for the reason recorded on
+ * `primaryCta` above: `/dashboard` is gated behind a real session (specs/011),
+ * so a logged-out visitor clicking a button that says "Workspace" would be
+ * bounced to `/login` — not what the label promised. Returning users have the
+ * quiet `loginCta` link beside it.
+ */
+export const workspaceCta = {
+  href: "/signup",
+  label: "Workspace",
 } as const satisfies Cta;
 
 export const hero = {
-  /** The two-tone headline device: line one in --foreground, line two in --body-foreground. */
+  /** The two-tone headline device: the first clause in --foreground, the closing clause in --body-foreground. */
   headline: {
-    lead: "Turn any client report into a personalised video and email.",
-    trail: "Approved by you, never auto-sent.",
+    lead: "Generate your own avatar videos, full videos into short clips,",
+    trail: "all in one workspace.",
   },
   subhead:
-    "Upload the report. Review the package. Send it. Every video, every word of every email, and every call to action passes a human before a client ever sees it.",
-  shot: {
-    alt: "The Review screen: a rendered avatar video, the personalised email beside it, the call to action, and the original client report attached.",
+    "Your face and voice, without recording. Reply to brands and clients with personal avatar videos that build trust and close deals while you sleep.",
+  /**
+   * The wireframe's hero panel: "a small 3d video which is always running in a
+   * loop". `src` is deliberately absent — the same call ReservedFrame makes,
+   * because placeholder art is worse than no art. Drop an .mp4 in /public,
+   * point `src` at it, add a `poster`, and the panel starts playing; the box
+   * never changes size, so nothing shifts.
+   */
+  loop: {
+    alt: "A looping film of an avatar video being generated in the workspace.",
     width: 1280,
-    height: 800,
+    height: 720,
   },
 } as const;
+
+/**
+ * The two feature bands, in the order the wireframe stacks them, with the
+ * visual alternating side so the page does not read as one column of boxes.
+ *
+ * Neither carries a paragraph, because the wireframe does not give them one
+ * and this file does not invent copy (specs/002 §3.12). `FeaturePanel.body` is
+ * optional precisely so the slot exists the day real copy is written.
+ */
+export const features = [
+  {
+    id: "how-it-works",
+    label: "Avatar video generation",
+    title: "Your face, your voice, in every video you never recorded.",
+    media: {
+      alt: "An avatar video being generated from a saved face and voice preset.",
+      width: 960,
+      height: 960,
+    },
+    mediaSide: "start",
+  },
+  {
+    id: "clip-flow",
+    label: "Clip flow",
+    title: "One long video hides ten short ones. We find them.",
+    media: {
+      alt: "A long video broken into short vertical clips, each with its own frame.",
+      width: 960,
+      height: 960,
+    },
+    mediaSide: "end",
+  },
+] as const satisfies readonly FeaturePanel[];
 
 /**
  * Ships empty — a customer logo needs a customer, and permission.
@@ -182,17 +252,19 @@ export const footer = {
   columns: [
     {
       heading: "Product",
+      links: [{ href: "#how-it-works", label: "How it works" }],
+    },
+    {
+      heading: "Solution",
       links: [
-        { href: "#how-it-works", label: "How it works" },
-        { href: "#pricing", label: "Pricing" },
-        { href: "#security", label: "Security" },
-        { href: "#faq", label: "FAQ" },
+        { href: "#how-it-works", label: "Avatar videos" },
+        { href: "#clip-flow", label: "Short clips" },
       ],
     },
     {
       heading: "Company",
       links: [
-        { href: "/signup", label: "Create a workspace" },
+        { href: "/signup", label: "Workspace" },
         { href: "/login", label: "Log in" },
       ],
     },
@@ -206,6 +278,27 @@ export const footer = {
   // deferred — no checkout, no contract, nothing yet that needs one.
   legal: "Terms of service are published before general availability.",
 } as const satisfies { columns: readonly FooterColumn[]; legal: string };
+
+/**
+ * The footer's bottom bar: the wireframe's social marks, copyright and
+ * language slot.
+ *
+ * `language` is a plain statement of the language this page is written in, not
+ * a picker. There is no i18n in this product, and a select that changes
+ * nothing is a lie told in a widget.
+ */
+export const footerBottom = {
+  copyright: "signet@2026",
+  language: "English",
+} as const;
+
+/**
+ * Ships empty, for the same reason as `logos` and `testimonials`: a footer
+ * link to an account that does not exist is a dead end. Add the real handles
+ * here and the row of marks appears in the bottom bar — the markup is already
+ * written and type-checked.
+ */
+export const socials: readonly Social[] = [];
 
 /**
  * `/legal/privacy` (specs/013). Grounded in what this product actually does

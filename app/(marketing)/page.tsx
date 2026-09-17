@@ -1,14 +1,12 @@
-import { Faq } from "@/components/marketing/Faq";
-import { FinalCta } from "@/components/marketing/FinalCta";
+import { Fragment } from "react";
+
+import { features } from "@/app/(marketing)/_content";
+import { ColorGridTransition } from "@/components/marketing/ColorGridTransition";
+import { FeatureSplit } from "@/components/marketing/FeatureSplit";
 import { Footer } from "@/components/marketing/Footer";
 import { Hero } from "@/components/marketing/Hero";
-import { LogoStrip } from "@/components/marketing/LogoStrip";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
-import { PricingPreview } from "@/components/marketing/PricingPreview";
-import { ProofBlocks } from "@/components/marketing/ProofBlocks";
-import { SecurityNote } from "@/components/marketing/SecurityNote";
-import { StepRail } from "@/components/marketing/StepRail";
-import { Testimonials } from "@/components/marketing/Testimonials";
+import { Reveal } from "@/components/marketing/Reveal";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 /**
@@ -35,6 +33,23 @@ const jsonLd = {
   description: SITE_TAGLINE,
 };
 
+/**
+ * The page, composed to the landing-page wireframe: nav, hero with the looping
+ * film panel, the two feature bands separated by the colour-grid transition,
+ * and the footer.
+ *
+ * Seven sections the earlier page rendered — the logo strip, the seven-step
+ * rail, the proof blocks, the testimonial, the pricing preview, the security
+ * band and the FAQ — are no longer composed here. Their components and tests
+ * are untouched and still pass; nothing was deleted, so re-adding one is a
+ * single line. The nav and footer no longer carry a "Security" link, for the
+ * same reason "Pricing" already didn't — see `nav` in `_content.ts`.
+ *
+ * "Research" is a wireframe-mandated label (specs/016 §4 explicitly rejects
+ * dropping it just because it's inconvenient to wire), so removing the FAQ
+ * it used to point at meant repointing it rather than deleting it — see
+ * `nav` in `_content.ts`.
+ */
 export default function LandingPage() {
   return (
     <>
@@ -49,14 +64,19 @@ export default function LandingPage() {
 
       <main id="main">
         <Hero />
-        <LogoStrip />
-        <StepRail />
-        <ProofBlocks />
-        <Testimonials />
-        <PricingPreview />
-        <SecurityNote />
-        <Faq />
-        <FinalCta />
+
+        {features.map((panel, index) => (
+          <Fragment key={panel.id}>
+            {/* The wireframe's "color grid transition" sits between the two
+                bands, not above the first one. Left out of the scroll-reveal:
+                ColorGridTransition.tsx documents itself as deliberately
+                static. */}
+            {index > 0 ? <ColorGridTransition /> : null}
+            <Reveal>
+              <FeatureSplit panel={panel} />
+            </Reveal>
+          </Fragment>
+        ))}
       </main>
 
       <Footer />
@@ -67,7 +87,7 @@ export default function LandingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          __html: JSON.stringify(jsonLd).replace(/</g, "\u003c"),
         }}
       />
     </>
