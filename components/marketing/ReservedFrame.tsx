@@ -31,7 +31,7 @@ export function ReservedFrame({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-xs border border-border bg-surface ${className}`}
+      className={`relative overflow-hidden rounded-xl border border-border bg-surface ${className}`}
       style={{ aspectRatio: `${width} / ${height}` }}
     >
       {src ? (

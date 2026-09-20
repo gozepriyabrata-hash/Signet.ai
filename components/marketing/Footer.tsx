@@ -1,7 +1,12 @@
 import Link from "next/link";
 
-import { footer, footerBottom, socials } from "@/app/(marketing)/_content";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import {
+  footer,
+  footerBottom,
+  footerTagline,
+  socials,
+} from "@/app/(marketing)/_content";
+import { SITE_NAME } from "@/lib/site";
 
 const LINK_CLASS =
   "text-sm font-light tracking-[0.01em] text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
@@ -17,8 +22,11 @@ const LINK_CLASS =
  *
  * The wireframe puts a graphic in the left block. There is no logo asset, and
  * placeholder art is worse than no art, so the block is the wordmark set large
- * with the product's one-line description under it — real content in the space
- * the drawing reserves.
+ * with a closing line under it (`footerTagline`, _content.ts) — real content
+ * in the space the drawing reserves. `footerTagline` is deliberately its own
+ * constant, not `SITE_TAGLINE`: that one also feeds the page's meta
+ * description, OG/Twitter tags and JSON-LD, where a closing-CTA line like
+ * this one would read oddly in a search result or link preview.
  *
  * The social row renders only when `socials` has entries, which it does not
  * today. That is the same dormant-section mechanism as `logos` and
@@ -34,8 +42,8 @@ export function Footer() {
             <p className="text-2xl font-normal tracking-tight text-foreground">
               {SITE_NAME}
             </p>
-            <p className="mt-3 max-w-[32ch] text-sm font-light leading-relaxed tracking-[0.01em] text-muted-foreground">
-              {SITE_TAGLINE}
+            <p className="mt-3 max-w-[36ch] text-sm font-light leading-relaxed tracking-[0.01em] text-muted-foreground">
+              {footerTagline}
             </p>
           </div>
 

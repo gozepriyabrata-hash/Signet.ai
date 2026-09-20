@@ -1,6 +1,6 @@
 "use client";
 
-import { useScrolled } from "@/hooks/use-scrolled";
+import { NAV_SCROLL_THRESHOLD, useScrolled } from "@/hooks/use-scrolled";
 
 /**
  * The nav wordmark. Client leaf (rule 8) — the only interactivity in
@@ -34,7 +34,7 @@ import { useScrolled } from "@/hooks/use-scrolled";
  * "letters dissolve, then the space they held settles" instead.
  */
 export function NavLogo({ label }: { label: string }) {
-  const scrolled = useScrolled();
+  const scrolled = useScrolled(NAV_SCROLL_THRESHOLD);
   const [first, ...rest] = label;
   const restLabel = rest.join("");
 

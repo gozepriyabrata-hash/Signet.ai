@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { brandFont } from "@/app/fonts";
+import { accentSerifFont, brandFont } from "@/app/fonts";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 import "@/app/globals.css";
@@ -55,7 +55,7 @@ export default function MarketingRootLayout({
     // only; it does not mask mismatches elsewhere in the tree.
     <html
       lang="en"
-      className={`${brandFont.variable} marketing-shell`}
+      className={`${brandFont.variable} ${accentSerifFont.variable} marketing-shell`}
       suppressHydrationWarning
     >
       <body className="font-sans">{children}</body>

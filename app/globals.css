@@ -164,6 +164,13 @@ html[data-sidebar="collapsed"] {
   --font-display: var(--font-brand), "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-sans:    var(--font-brand), "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* --font-accent-serif is defined by next/font in app/fonts.ts, italic-only,
+     and used for exactly one word in the hero headline (Hero.tsx). It is a
+     scoped accent, not a second brand face — everything else stays on
+     --font-sans/--font-brand (docs/design-system.md §2, "one family
+     throughout"). */
+  --font-serif: var(--font-accent-serif), Georgia, "Times New Roman", serif;
+
   --shadow-hairline: 0 1px 2px oklch(0 0 0 / 0.12);
   --shadow-float:    0 68px 116px oklch(0 0 0 / 0.35);
 }
@@ -255,4 +262,209 @@ html[data-sidebar="collapsed"] {
   transition: none;
   opacity: 0;
   transform: translateY(24px);
+}
+
+/* ---------------------------------------------------------------------------
+   specs/017 — the cinematic landing-page redesign.
+
+   `.tilt-reveal` is `.motion-reveal`'s sibling, not a replacement: same
+   useInView-driven hidden/visible split (see TiltReveal.tsx), but the hidden
+   state adds a slight rotation and scale on top of the existing lift-and-fade,
+   for the "fan in" read the reference video's stat cards and step cards use.
+   Transform and opacity only, same as every other rule in this file — the
+   prefers-reduced-motion block above already collapses its transition to
+   0.01ms.
+--------------------------------------------------------------------------- */
+.tilt-reveal {
+  transition:
+    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+.tilt-reveal[data-reveal-state="hidden"] {
+  transition: none;
+  opacity: 0;
+  transform: translateY(48px) scale(0.9) rotateX(22deg);
+}
+
+/* Gives `.tilt-reveal`'s `rotateX` a vanishing point to fall toward, instead
+   of reading as a flat vertical squish — the reference video's card entrances
+   are a perspective fall, not a scale. Apply to the flex/grid container that
+   holds a row of `TiltReveal` cards (StepRail's `<ol>`, ProofPinned's motif
+   column, WorkflowArc's `<ol>`), never to the cards themselves. */
+.tilt-perspective {
+  perspective: 1200px;
+}
+
+/* The workflow marquee (WorkflowMarquee.tsx) — one duplicated track sliding
+   left, looping seamlessly because the duplicate starts exactly where the
+   original ends. `animation-play-state: paused` under reduced motion freezes
+   the ticker in place instead of relying on the global 0.01ms override, which
+   would otherwise jump-cut it once per "frame". */
+@keyframes marquee-track {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee-track 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+/* The pinned proof section's ambient center motif (ProofPinned.tsx) — a slow
+   breathing ring, distinct from `.generation-pulse`, which
+   docs/design-system.md §4 reserves for JobProgressCard and the video
+   placeholder and nowhere else. This one is landing-page-only illustration,
+   never a job-state signal. */
+@keyframes landing-motif-drift {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.55; }
+  50%      { transform: rotate(6deg) scale(1.04); opacity: 0.85; }
+}
+
+.landing-motif {
+  animation: landing-motif-drift 6s ease-in-out infinite;
+}
+
+/* The closing CTA's ambient background (AmbientEqualizer.tsx) — the reference
+   video's footer is a field of vertical frequency-bar columns behind "Ready
+   to build something bold?". Each bar's height is a deterministic function of
+   its own index (no Math.random — that would desync the server and client
+   render and fail hydration), and only `scaleY` breathes per column, staggered
+   by `animation-delay` set inline per bar. `transform-origin: bottom` keeps
+   the breathing anchored to the baseline instead of growing from the center. */
+@keyframes equalizer-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.18); }
+}
+
+.equalizer-bar {
+  animation: equalizer-breathe 3.6s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+/* ---------------------------------------------------------------------------
+   MarketingNav's scroll-reactive background (MarketingNav.tsx,
+   NavScrollWatcher.tsx). Transparent at the top of the page, flipping to a
+   translucent, blurred surface once html[data-nav-scrolled="true"] is set.
+
+   background-color/border-color/backdrop-filter, not transform/opacity — but
+   this is the same one-shot, discrete-state exception NavLogo.tsx's own
+   collapse transition already claims, not the generation-pulse's continuous
+   loop, so it does not need to stay transform/opacity-only.
+--------------------------------------------------------------------------- */
+.marketing-nav {
+  background-color: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: blur(0px);
+  transition:
+    background-color 300ms ease-out,
+    border-bottom-color 300ms ease-out,
+    backdrop-filter 300ms ease-out;
+}
+
+html[data-nav-scrolled="true"] .marketing-nav {
+  background-color: color-mix(in oklch, var(--background) 95%, transparent);
+  border-bottom-color: var(--border);
+  backdrop-filter: blur(8px);
+}
+
+/* No-JS floor: NavScrollWatcher never runs, so html[data-nav-scrolled] never
+   gets set. A permanently transparent header would be illegible over the
+   marquee's light-inverted band or any busy content, so this restores
+   today's always-on translucent bar instead of a see-through one. */
+@media (scripting: none) {
+  .marketing-nav {
+    background-color: color-mix(in oklch, var(--background) 95%, transparent);
+    border-bottom-color: var(--border);
+    backdrop-filter: blur(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-nav {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Faq.tsx's smooth-height accordion, on top of native <details>/<summary>
+   (specs/002 §3.5) rather than a JS-controlled one.
+
+   .faq-body always keeps a box — overriding the UA stylesheet's default of
+   unmounting a closed <details>'s body entirely — so there is something to
+   animate the height of; the grid-template-rows 0fr/1fr swap is what actually
+   hides the content. This is a deliberate, documented compromise on the
+   zero-JS decision, not a silent regression: a browser whose engine does not
+   animate the fr unit simply jumps instantly between 0fr and 1fr — an
+   unanimated toggle, functionally equivalent to the native open/close this
+   sits on top of, never a stuck or broken state.
+--------------------------------------------------------------------------- */
+.faq-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+details[open] > .faq-body {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-body {
+    transition: none;
+  }
+}
+
+/* WorkflowMarquee's edge fade — mask-alpha stops, not visible paint, so the
+   black/transparent values here are not a rule-6 hardcoded-color violation;
+   nothing is rendered in that color, it only controls what's underneath. */
+.marquee-edge-fade {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+}
+
+/* FaqScroller.tsx's three rows — reuse the marquee-track keyframe above
+   rather than defining a second one; `animation-direction: reverse` on the
+   same keyframe is what makes a row scroll the other way. `--faq-duration`
+   is set inline per row for the varied speeds. Unlike the ticker's
+   decorative text, an FAQ answer is something a visitor is meant to stop and
+   read, so hover pauses the row — prefers-reduced-motion pauses it outright,
+   same as .marquee-track. */
+.faq-row-track {
+  animation: marquee-track var(--faq-duration, 48s) linear infinite;
+}
+
+.faq-row-track-reverse {
+  animation: marquee-track var(--faq-duration, 48s) linear infinite reverse;
+}
+
+.faq-row-track:hover,
+.faq-row-track-reverse:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-row-track,
+  .faq-row-track-reverse {
+    animation-play-state: paused;
+  }
 }

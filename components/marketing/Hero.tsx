@@ -1,7 +1,17 @@
-import Link from "next/link";
-
-import { hero, primaryCta } from "@/app/(marketing)/_content";
+import { hero } from "@/app/(marketing)/_content";
+import { AmbientVideo } from "@/components/marketing/AmbientVideo";
+import { HeroField } from "@/components/marketing/HeroField";
 import { HeroLoop } from "@/components/marketing/HeroLoop";
+
+/**
+ * The hero headline's closing clause gets one deliberate typographic accent:
+ * its last word, in the italic serif face (`--font-serif`, app/fonts.ts).
+ * Split in code rather than duplicating the string, so the styling survives
+ * unchanged if `hero.headline.trail` is edited later.
+ */
+const trailWords = hero.headline.trail.split(" ");
+const trailAccentWord = trailWords.pop();
+const trailLead = trailWords.join(" ");
 
 /**
  * The hero, laid out from the landing-page wireframe: the headline on the
@@ -16,12 +26,25 @@ import { HeroLoop } from "@/components/marketing/HeroLoop";
  * band between the two feature sections is illustration, not a second accent
  * treatment, and is drawn in the artwork-only pastels for that reason.
  *
- * Nothing here animates. This block holds the LCP element, and every fade-in
- * on it is a measurable delay to the metric the page exists to win.
+ * The headline, subhead and CTAs do not animate. This block holds the LCP
+ * element, and every fade-in on it is a measurable delay to the metric the
+ * page exists to win. `HeroField` (specs/017) is the one exception: a
+ * decorative, `aria-hidden` canvas that mounts client-side after hydration,
+ * behind everything, and contributes nothing to the server-rendered paint.
  */
 export function Hero() {
   return (
     <section id="top" className="relative isolate overflow-hidden">
+      {/* Ambient background video — atmosphere, never product footage (see
+          the comment on hero.ambientVideo in _content.ts). Sits behind
+          everything else in the hero, including HeroField's canvas, with a
+          gradient overlay built entirely from --color-background so the
+          headline stays legible without introducing a new token. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-30 overflow-hidden">
+        <AmbientVideo src={hero.ambientVideo.src} className="absolute inset-0 size-full" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background" />
+      </div>
+
       {/* The accent wash. Decorative, hidden from assistive tech. Derived from
           the --accent token rather than any literal colour, so it moves with
           the theme and never introduces a hex (CLAUDE.md rule 6). */}
@@ -34,6 +57,12 @@ export function Hero() {
             "radial-gradient(60% 50% at 50% 0%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 70%)",
         }}
       />
+      {/* `inset-0` on the whole section, not the 36rem band the accent wash
+          uses: the reference's line field crosses the entire hero, including
+          past the film panel, not just the band behind the headline. */}
+      <div className="pointer-events-none absolute inset-0 -z-20">
+        <HeroField />
+      </div>
 
       <div className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-24">
         {/* `grid-cols-1` is load-bearing, not decorative: without an explicit
@@ -69,13 +98,17 @@ export function Hero() {
                 below, is unaffected — the failure is specific to the base,
                 unprefixed case. */}
             <span className="block text-body-foreground">
-              {hero.headline.trail}
+              {trailLead}
+              {trailLead ? " " : ""}
+              <span className="font-serif italic">{trailAccentWord}</span>
             </span>
           </h1>
 
-          <p className="min-w-0 max-w-[46ch] text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground lg:pb-3">
-            {hero.subhead}
-          </p>
+          <div className="min-w-0 lg:pb-3">
+            <p className="max-w-[46ch] text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
+              {hero.subhead}
+            </p>
+          </div>
         </div>
 
         <div className="mt-14">
@@ -86,15 +119,6 @@ export function Hero() {
           />
         </div>
 
-        <div className="mt-10 flex justify-center">
-          {/* next/link: /signup is inside (marketing), same as this page (specs/012 §3). */}
-          <Link
-            href={primaryCta.href}
-            className="inline-flex items-center rounded-full bg-primary px-8 py-3 text-sm font-light text-primary-foreground transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-          >
-            {primaryCta.label}
-          </Link>
-        </div>
       </div>
     </section>
   );

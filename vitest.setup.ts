@@ -46,3 +46,34 @@ if (typeof HTMLDialogElement !== "undefined") {
     };
   }
 }
+
+/**
+ * jsdom does not implement `IntersectionObserver` at all — `hooks/use-in-view.ts`
+ * (used by `Reveal.tsx` and, since specs/017, `TiltReveal.tsx`) throws
+ * "IntersectionObserver is not defined" the moment a component using it
+ * mounts in a test.
+ *
+ * The gap is jsdom's, same reasoning as the `<dialog>` stub above: this repo's
+ * scroll-reveal components exist because real browsers support the API, so
+ * the test environment is patched rather than adding a feature check to
+ * production code. The stub never fires its callback — a scroll-reveal
+ * component under test simply never crosses into view, which is a fine
+ * default: it renders the same `data-reveal-state="hidden"` markup here that
+ * a real browser would show for one render frame before the observer fires.
+ */
+if (typeof globalThis.IntersectionObserver === "undefined") {
+  class IntersectionObserverStub implements IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin: string = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+
+  globalThis.IntersectionObserver =
+    IntersectionObserverStub as unknown as typeof IntersectionObserver;
+}

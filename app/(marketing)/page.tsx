@@ -1,12 +1,16 @@
-import { Fragment } from "react";
-
-import { features } from "@/app/(marketing)/_content";
-import { ColorGridTransition } from "@/components/marketing/ColorGridTransition";
+import { features, featuresAmbientVideo } from "@/app/(marketing)/_content";
+import { AmbientEqualizer } from "@/components/marketing/AmbientEqualizer";
+import { AmbientVideo } from "@/components/marketing/AmbientVideo";
+import { FaqScroller } from "@/components/marketing/FaqScroller";
 import { FeatureSplit } from "@/components/marketing/FeatureSplit";
+import { FinalCta } from "@/components/marketing/FinalCta";
 import { Footer } from "@/components/marketing/Footer";
 import { Hero } from "@/components/marketing/Hero";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
+import { ProofPinned } from "@/components/marketing/ProofPinned";
 import { Reveal } from "@/components/marketing/Reveal";
+import { WorkflowArc } from "@/components/marketing/WorkflowArc";
+import { WorkflowMarquee } from "@/components/marketing/WorkflowMarquee";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 /**
@@ -34,21 +38,37 @@ const jsonLd = {
 };
 
 /**
- * The page, composed to the landing-page wireframe: nav, hero with the looping
- * film panel, the two feature bands separated by the colour-grid transition,
- * and the footer.
+ * The page, restaged as a continuous cinematic scroll (specs/017): nav, hero,
+ * a marquee of the seven step names, a pinned proof section, the two feature
+ * bands, an arced gallery of the seven steps, the FAQ, the final CTA, and the
+ * footer.
  *
- * Seven sections the earlier page rendered — the logo strip, the seven-step
- * rail, the proof blocks, the testimonial, the pricing preview, the security
- * band and the FAQ — are no longer composed here. Their components and tests
- * are untouched and still pass; nothing was deleted, so re-adding one is a
- * single line. The nav and footer no longer carry a "Security" link, for the
- * same reason "Pricing" already didn't — see `nav` in `_content.ts`.
+ * `StepRail` and `SecurityBigType` were both removed from this composition on
+ * request — they stay dormant, tested components (same precedent as
+ * `LogoStrip`, `Testimonials` and `PricingPreview`), not deleted, in case
+ * either is wanted again. `#how-it-works` — the id both the nav and the
+ * hero's "See the seven steps" link point at — moved onto `WorkflowArc`'s
+ * section instead of `StepRail`'s, since that's the page's other "seven
+ * steps" content and a nav anchor with no section to land on is worse than a
+ * missing link. Nothing pointed at `#security` — the nav already dropped that
+ * label before this pass — so removing `SecurityBigType` leaves no dangling
+ * anchor. `ColorGridTransition` (the pastel band between the two feature
+ * bands) was also removed on request — its file is untouched and stays
+ * importable, just not composed here.
  *
- * "Research" is a wireframe-mandated label (specs/016 §4 explicitly rejects
- * dropping it just because it's inconvenient to wire), so removing the FAQ
- * it used to point at meant repointing it rather than deleting it — see
- * `nav` in `_content.ts`.
+ * The FAQ section is `FaqScroller` (three looping horizontal card rows), not
+ * the accordion `Faq` normally renders here — `Faq.tsx` and its test stay
+ * exactly as they were, dormant on the same precedent, still owning `#faq`'s
+ * id if `FaqScroller` is ever swapped back.
+ *
+ * Every other section below the hero is content that already existed in
+ * `_content.ts` — `steps`, `proofBlocks`, `faq`, `finalCta` — and was simply
+ * not composed here since specs/016 slimmed the page down to the wireframe's
+ * eight sections. Nothing here invents a claim; specs/017 §3 records exactly
+ * what changed and why. `LogoStrip`, `Testimonials` and `PricingPreview` stay
+ * dormant, on the same precedent specs/016 §4 set: kept, tested, not
+ * composed, because their content (`logos`, `testimonials`, `tiers`) still
+ * does not exist.
  */
 export default function LandingPage() {
   return (
@@ -64,19 +84,46 @@ export default function LandingPage() {
 
       <main id="main">
         <Hero />
+        <WorkflowMarquee />
+        <ProofPinned />
 
-        {features.map((panel, index) => (
-          <Fragment key={panel.id}>
-            {/* The wireframe's "color grid transition" sits between the two
-                bands, not above the first one. Left out of the scroll-reveal:
-                ColorGridTransition.tsx documents itself as deliberately
-                static. */}
-            {index > 0 ? <ColorGridTransition /> : null}
-            <Reveal>
+        {/* One continuous ambient video behind both feature bands, not one
+            per band: since ColorGridTransition was removed the two sections
+            sit directly adjacent, and two independently-playing clips would
+            show a visible seam at the border between them. Same pattern as
+            FinalCta's wrapper below — video at -z-20, gradient overlay for
+            the heading/label text that sits directly on the section
+            background (ReservedFrame's own box is opaque either way). */}
+        <div className="relative isolate overflow-hidden">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20">
+            <AmbientVideo src={featuresAmbientVideo.src} className="absolute inset-0 size-full" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/25 to-background/60" />
+          </div>
+          {features.map((panel) => (
+            <Reveal key={panel.id}>
               <FeatureSplit panel={panel} />
             </Reveal>
-          </Fragment>
-        ))}
+          ))}
+        </div>
+
+        <WorkflowArc />
+
+        <Reveal>
+          <FaqScroller />
+        </Reveal>
+
+        {/* AmbientEqualizer is the decorative background for FinalCta alone
+            (specs/017) — a relative wrapper here, not inside FinalCta.tsx
+            itself, so the untouched component stays exactly as it was. The
+            ambient video that used to sit behind it was removed on request;
+            the equalizer's own animation and FinalCta's text/CTA are
+            unchanged. */}
+        <div className="relative isolate overflow-hidden">
+          <AmbientEqualizer />
+          <Reveal>
+            <FinalCta />
+          </Reveal>
+        </div>
       </main>
 
       <Footer />

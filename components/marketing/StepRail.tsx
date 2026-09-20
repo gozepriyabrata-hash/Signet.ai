@@ -1,4 +1,5 @@
 import { steps, stepsIntro } from "@/app/(marketing)/_content";
+import { TiltReveal } from "@/components/marketing/TiltReveal";
 
 /** The step the rail points at — the human gate, which is the differentiator. */
 const CURRENT_STEP_ID = "review";
@@ -16,6 +17,11 @@ const CURRENT_STEP_ID = "review";
  *
  * Accent use 2 of 2 (§3.10), and the one place on this page where accent
  * carries its ordinary product meaning rather than acting as brand.
+ *
+ * Each card fans in with `TiltReveal` (specs/017), staggered by index. The
+ * `<li>`/heading structure `StepRail.test.tsx` pins is unchanged — only its
+ * contents grew a client wrapper, which contributes nothing to the
+ * accessibility tree beyond what was already there.
  */
 export function StepRail() {
   const currentIndex = steps.findIndex((step) => step.id === CURRENT_STEP_ID);
@@ -30,40 +36,42 @@ export function StepRail() {
           {stepsIntro.body}
         </p>
 
-        <ol className="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="tilt-perspective mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, index) => {
             const isCurrent = index === currentIndex;
             const isComplete = index < currentIndex;
 
             return (
               <li key={step.id} className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className={[
-                    "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-normal",
-                    isCurrent
-                      ? "text-accent ring-2 ring-accent"
-                      : isComplete
-                        ? "bg-surface-raised text-foreground"
-                        : "border border-border text-muted-foreground",
-                  ].join(" ")}
-                >
-                  {index + 1}
-                </span>
+                <TiltReveal delayMs={index * 60} className="flex gap-4">
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-normal",
+                      isCurrent
+                        ? "text-accent ring-2 ring-accent"
+                        : isComplete
+                          ? "bg-surface-raised text-foreground"
+                          : "border border-border text-muted-foreground",
+                    ].join(" ")}
+                  >
+                    {index + 1}
+                  </span>
 
-                <div>
-                  <h3 className="text-base font-normal text-foreground">
-                    {step.label}
-                    {isCurrent ? (
-                      <span className="ml-2 align-middle text-xs font-light text-accent">
-                        the human gate
-                      </span>
-                    ) : null}
-                  </h3>
-                  <p className="mt-1.5 text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
-                    {step.detail}
-                  </p>
-                </div>
+                  <div>
+                    <h3 className="text-base font-normal text-foreground">
+                      {step.label}
+                      {isCurrent ? (
+                        <span className="ml-2 align-middle text-xs font-light text-accent">
+                          the human gate
+                        </span>
+                      ) : null}
+                    </h3>
+                    <p className="mt-1.5 text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
+                      {step.detail}
+                    </p>
+                  </div>
+                </TiltReveal>
               </li>
             );
           })}

@@ -29,8 +29,16 @@ import type {
  * Two of them had no destination drawn beside them, so they point at the
  * nearest thing that actually exists rather than at a page nobody has written:
  * "Policy" at the published privacy policy (specs/013), "Research" at the
- * second feature band (`features[1]`, id `clip-flow` — `how-it-works`, the
- * first band, already belongs to the "How it works" label). "Research"
+ * second feature band (`features[1]`, id `clip-flow`). "How it works" points
+ * at `WorkflowArc`'s section id, not the first feature band — specs/017
+ * reinstated the step rail alongside the feature bands, and the two sections
+ * briefly claimed the same `id="how-it-works"` the moment both were composed
+ * on the page together (a duplicate-id bug, not a content change); the first
+ * feature band's `id` moved to `avatar-video` instead. `StepRail` (which had
+ * held `id="how-it-works"` since) was later removed from the page's
+ * composition on request and left dormant; the id moved again, onto
+ * `WorkflowArc`, the page's other "seven steps" section, so this link and the
+ * hero's "See the seven steps" link keep a real destination. "Research"
  * pointed at the FAQ until that section was dropped from the page; specs/016
  * §4 explicitly rejects removing the label itself just because it is
  * inconvenient to wire, so it moved rather than disappeared. If either grows
@@ -101,6 +109,54 @@ export const hero = {
     width: 1280,
     height: 720,
   },
+  /**
+   * Ambient, decorative motion behind the hero — atmosphere, never a product
+   * screenshot (unlike `loop` above, which is reserved for the real thing and
+   * stays empty until it exists). Reused verbatim for `finalCtaAmbientVideo`
+   * below, the same one clip in both places.
+   */
+  ambientVideo: {
+    src: "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
+  },
+} as const;
+
+/**
+ * The closing CTA band's own ambient video — the same clip as `hero.ambientVideo`.
+ * Two other stock clips were supplied alongside this one, proposed as
+ * backgrounds for floating "AI chat"/"AI transcription" UI mockups over the
+ * two feature sections; that placement was rejected (Signet has neither
+ * feature, and `FeatureSplit.tsx`'s `ReservedFrame` placeholders exist
+ * specifically so this page never fakes a screenshot), so those two clips are
+ * unused.
+ *
+ * Dormant, not deleted: the video behind FinalCta was removed on request
+ * (page.tsx no longer renders it), but AmbientEqualizer's bars and FinalCta's
+ * own text/CTA are unchanged, and this constant stays here in case the video
+ * is wanted back.
+ */
+export const finalCtaAmbientVideo = {
+  src: "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
+} as const;
+
+/**
+ * The FAQ section's own ambient video — the same clip again, on request.
+ * Purely decorative behind FaqScroller's rows; the cards themselves are
+ * opaque (`bg-surface`), so the video only shows in the section's own
+ * padding and the gaps around the cards, never behind the text.
+ */
+export const faqAmbientVideo = {
+  src: "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
+} as const;
+
+/**
+ * The two feature bands' shared ambient video — the same clip again, on
+ * request. One video behind both bands together, not one per band: since
+ * `ColorGridTransition` was removed, the two sections sit directly adjacent,
+ * and a seam between two independently-playing clips would read as a glitch
+ * rather than one continuous backdrop.
+ */
+export const featuresAmbientVideo = {
+  src: "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
 } as const;
 
 /**
@@ -110,10 +166,16 @@ export const hero = {
  * Neither carries a paragraph, because the wireframe does not give them one
  * and this file does not invent copy (specs/002 §3.12). `FeaturePanel.body` is
  * optional precisely so the slot exists the day real copy is written.
+ *
+ * The first band's `id` is `avatar-video`, not `how-it-works` — specs/017
+ * reinstated the step rail (`StepRail.tsx`, `id="how-it-works"`) onto the same
+ * page as these bands, and the two sections collided on the same DOM id the
+ * moment both were composed together. This is a plumbing fix, not a content
+ * decision: only the `id` moved, the label and title below are unchanged.
  */
 export const features = [
   {
-    id: "how-it-works",
+    id: "avatar-video",
     label: "Avatar video generation",
     title: "Your face, your voice, in every video you never recorded.",
     media: {
@@ -145,6 +207,39 @@ export const features = [
  * type-checked so it still works the day real logos land.
  */
 export const logos: readonly Logo[] = [];
+
+/**
+ * WorkflowMarquee's ticker band — decorative branding copy, deliberately
+ * decoupled from `steps` above. `steps` still drives StepRail/WorkflowArc and
+ * still names the real seven-step workflow; the ticker is stylistic creator-
+ * pipeline wordplay chosen for tone, not a second, competing statement of the
+ * product's actual steps.
+ *
+ * `tickerWords` is the one export WorkflowMarquee reads. Swapping the whole
+ * page's ticker tone is a one-line change: point it at a different key here.
+ */
+export const tickerWordSets = {
+  primary: [
+    "SCRIPT",
+    "AVATAR",
+    "RECORD",
+    "CLIP",
+    "CAPTION",
+    "POST",
+    "GROW",
+  ],
+  playful: [
+    "TYPE IT",
+    "CLONE IT",
+    "ROLL IT",
+    "CUT IT",
+    "HOOK IT",
+    "DROP IT",
+    "BLOW UP",
+  ],
+} as const;
+
+export const tickerWords: readonly string[] = tickerWordSets.primary;
 
 export const stepsIntro = {
   title: "Seven steps, one package",
@@ -217,36 +312,85 @@ export const security = {
 
 export const faq = [
   {
-    question: "Can it send on a schedule, or in bulk?",
+    question: "What does this actually do?",
     answer:
-      "No. A package is sent from the Review screen, by a person, after an explicit approval. There is no scheduler and no bulk send, because both would mean a client receives something nobody read.",
+      "Upload a client report — PDF, sheet, whatever. It turns the numbers into a 90-second video with your face and voice, plus an email.",
   },
   {
-    question: "What happens to the report I upload?",
+    question: "Who's it for?",
     answer:
-      "It is parsed to produce the summary and talking points, and the original file is attached to the outgoing package. The recipient receives the report you uploaded, not a rewrite of it.",
+      "Anyone sending the same report to a lot of people and knowing most won't read it. Agencies, advisors, account managers, CS teams.",
+  },
+  {
+    question: "What do I need to start?",
+    answer:
+      "A report file and two minutes of you on camera — phone is fine. Setup takes 10–15 minutes, once.",
+  },
+  {
+    question: "Do I configure it before every send?",
+    answer:
+      "No. The workspace is set up once. After that: drop the report, review the script, approve.",
   },
   {
     question: "Can I edit what the AI writes?",
     answer:
-      "All of it. Summary, insights, talking points, script, subject, body and call to action are editable fields with a regenerate option. Once you edit something, it stops being labelled as AI generated — it is yours.",
+      "Yes — step four is a plain text box. Numbers come out accurate, tone sometimes flat. Most people just rewrite the first line.",
   },
   {
-    question: "Whose voice and face are in the video?",
+    question: "Can it send on a schedule or in bulk?",
     answer:
-      "Yours, or a stock avatar and voice you pick in Settings. You set this up once as a preset; the workflow only chooses between presets you have already approved.",
+      "Bulk, yes — each recipient gets their own numbers. Schedule, partly — you can set a window, but the approval gate stays. Nothing sends while you sleep.",
   },
   {
-    question: "Do I need to configure it before every send?",
+    question: "What happens to my report?",
     answer:
-      "No. Branding, guardrails, signatures and calls to action live in Settings and apply automatically. A workflow step never asks you more than a handful of questions.",
+      "Only the figures get pulled. The file stays in your workspace, never goes into training, and never gets attached to the outgoing email.",
+  },
+  {
+    question: "Whose face and voice are in the video?",
+    answer:
+      "Yours, built from your two minutes — not a stock presenter. A colleague can add theirs and revoke it anytime.",
+  },
+  {
+    question: "What if a number's wrong?",
+    answer:
+      "Numbers are pulled straight from the file, not written. Click any number in the preview and it shows you the source cell.",
+  },
+  {
+    question: "What's next, and who do I ping if it breaks?",
+    answer:
+      "Coming up: CRM-triggered sends, template library, Spanish and German. If something breaks, hit the in-app issue button — it attaches your workspace state automatically.",
   },
 ] as const satisfies readonly FaqEntry[];
 
 export const finalCta = {
-  title: "See the package before you send it.",
-  body: "Create a workspace and walk a report through all seven steps. Nothing leaves the building without you.",
+  title: "Film once. Never film again.",
+  body: "Two minutes of footage becomes a studio-quality presence that never tires, fumbles, or asks for a reshoot.",
+  bullets: [
+    "No lighting setup, no wardrobe panic, no fourteenth take",
+    "Speak 29 languages in your own voice — open the markets you've been ignoring",
+    "Identical in video #4 and video #400. Zero drift.",
+  ],
+  /**
+   * This section's own CTA — separate from `primaryCta` (still the link
+   * target everywhere else) because the label here is specific to this
+   * closing pitch, not the site-wide "Get started".
+   */
+  cta: {
+    href: "/signup",
+    label: "Build my avatar",
+  },
 } as const;
+
+/**
+ * The footer's own line under the wordmark — deliberately separate from
+ * `SITE_TAGLINE` (lib/site.ts), which also drives the page's meta
+ * description, OG/Twitter tags and JSON-LD: this is a closing-CTA line for a
+ * human reading the footer, not description copy for a search result or link
+ * preview.
+ */
+export const footerTagline =
+  "Your scrolling ends here. Your first video starts now — one click, one avatar, one clip they'll finish. Shall we?" as const;
 
 export const footer = {
   columns: [
@@ -257,7 +401,7 @@ export const footer = {
     {
       heading: "Solution",
       links: [
-        { href: "#how-it-works", label: "Avatar videos" },
+        { href: "#avatar-video", label: "Avatar videos" },
         { href: "#clip-flow", label: "Short clips" },
       ],
     },

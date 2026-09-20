@@ -1,10 +1,18 @@
 ---
 Spec:        016
 Title:       The landing page, rebuilt to the wireframe
-Status:      draft
+Status:      superseded
+Superseded-by: 017
 Created:     2026-09-17
 Supersedes:  —
 ---
+
+> **Superseded by [`specs/017`](017-landing-cinematic-redesign.md).** The
+> section composition and the "no scroll animation" call below were correct
+> against the wireframe this spec was implementing. `specs/017` restages the
+> same page around a supplied motion reference and reinstates the sections
+> this spec parked as dormant; the reasoning below about the wireframe itself,
+> the pastel band and the nav/footer label sourcing is still accurate history.
 
 ## 1. Problem
 
