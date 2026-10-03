@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AIEditableField } from "@/components/workflow/AIEditableField";
 import { JobProgressCard } from "@/components/workflow/JobProgressCard";
@@ -180,16 +179,6 @@ export function EmailStep({ projectId }: { projectId: string }) {
                     </option>
                   ))}
                 </select>
-                {/* The target URL is set with the preset, not typed here. */}
-                <p className="text-sm font-light text-muted-foreground">
-                  Where it points is part of the preset.{" "}
-                  <Link
-                    href="/settings/email"
-                    className="rounded-full underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-                  >
-                    Manage in Settings
-                  </Link>
-                </p>
               </div>
 
               <div className="space-y-2">

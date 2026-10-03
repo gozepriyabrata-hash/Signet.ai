@@ -129,6 +129,8 @@ describe("ProjectResumeRedirect · the redirect target", () => {
 
   it("resolves each status to its own step", async () => {
     for (const [status, step] of [
+      // Recipient set, report missing: avatar and voice are inferred from the
+      // recipient, the report is not.
       ["draft", "report"],
       ["analysing", "analysis"],
       ["video_pending", "video"],

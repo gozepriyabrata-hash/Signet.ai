@@ -7,9 +7,9 @@ import { useEffect, type RefObject } from "react";
  * returns focus to the trigger on Escape. No popover/dropdown-menu primitive
  * is vendored into `components/ui/` and no Radix package beyond
  * `react-slot` is a dependency (see `specs/015-dashboard-redesign.md` §12),
- * so every menu in this app — `DashboardHeader`'s "+" menu, `ProfileMenu`'s
- * account menu — shares this one small hook instead of each re-implementing
- * the same two `document` listeners.
+ * so hand-rolled menus (today only `ProfileMenu`'s account menu) share this
+ * one small hook instead of each re-implementing the same two `document`
+ * listeners.
  *
  * Listeners attach only while `open` is true, and `triggerRef`/`menuRef` are
  * `useRef` objects, so their identity is stable across renders — including

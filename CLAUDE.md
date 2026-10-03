@@ -22,9 +22,37 @@ and two SQLite tables are real, not mocked. Nowhere else does this apply.
 Report → Recipient → Analysis → Video → Email → Review → Send
 ```
 
-**This 7-step workflow is the product.** The dashboard, settings and analytics are
+**This 7-step workflow is the product.** The dashboard and settings are
 supporting cast. When a change could go either in the workflow or in settings,
 it goes in settings.
+
+## First run and the delight layer
+
+`specs/018` reads two supplied boards ("Better Flow After Create Workspace" and
+"the Delight Layer") frame by frame. **Nothing in it is built yet.** What it
+settles, so nobody re-argues it:
+
+- **Signup → `/welcome` → dashboard.** A skippable three-screen setup
+  (presenter, brand, first recipient *or* a sample), reached **only** from
+  `signupAction`'s redirect. That redirect is the whole first-run detector:
+  no flag, no DB column. Each screen writes the same presets `/settings/*`
+  edits (rule 1). "Use my own face/voice" hands off to Settings' consent
+  step and never clones inline (rule 13b).
+- **The sample project** (`Project.isSample`) is always labelled and **can
+  never send**: Review renders no Approve & Send on it at all (rule 2). Its
+  "30-second aha" is a mock number (the job durations sum to ~29s). The real
+  adapter must serve the sample's video pre-rendered.
+- **One celebration**: a CSS-only, one-shot confetti keyframe on the
+  workspace's **first real send**, never on "ready". It is skipped entirely
+  under reduced motion.
+- **Refused:** a live avatar that speaks while you type (a vendor render per
+  keystroke), send streaks or loss framing, "Make magic"-style button labels
+  (buttons name verb + object; **Approve & Send** / **Send it** are fixed),
+  status lines naming work that is not running, optimistic job or send
+  state, and the boards' gradient styling.
+- Four of the board's six "UX rules" were already this repo's rules (one
+  primary per screen, real progress, skeletons, 3–5 controls). A board
+  agreeing with the rules is not a reason to change them.
 
 ## Stack
 
@@ -92,8 +120,6 @@ app/
       layout.tsx
       dashboard/page.tsx
       projects/page.tsx
-      campaigns/page.tsx  campaigns/[id]/page.tsx
-      analytics/page.tsx
       settings/layout.tsx
       settings/{avatar,voice,video,ai,email,recipients,analytics,security,usage}/
     (focus)/                    ← the workflow. No sidebar, by construction.
@@ -101,6 +127,7 @@ app/
       projects/[id]/
         page.tsx                ← redirects to the resume step
         report/  recipient/  analysis/  video/  email/  review/
+    (setup)/welcome/            ← first-run setup. SPECIFIED, NOT BUILT (specs/018)
   robots.ts  sitemap.ts  icon.tsx
 components/
   ui/                  ← shadcn primitives (vendored, editable)
@@ -109,8 +136,9 @@ components/
   marketing/           ← landing sections + the four auth forms; never imported by (app)
   shell/               ← Navbar, Sidebar, SidebarToggle, ProfileMenu
   settings/            ← PresetList/Row/Dialog, UploadPanel, the nine sections
-  analytics/           ← hand-written SVG charts; no charting library (rule 6)
-  campaigns/  dashboard/  projects/  shared/
+  dashboard/           ← DashboardHeader (rendered); StatRow, RecentProjects,
+                         ProjectRow (un-rendered since specs/015 §8)
+  projects/  shared/
 lib/
   api/{index.ts, types.ts, errors.ts, mock/, real/}
   auth/                ← ALWAYS REAL: actions, session, dal, password, tokens, route-guard
@@ -118,11 +146,12 @@ lib/
   workflow.ts          ← step order + the resume rule; pure, tested on its own
   query-client.ts      ← per-request on the server, singleton in the browser
   query-keys.ts        ← the `qk` factory
+  report-validation.ts ← rule 12's type/size check, shared by ReportStep and the dashboard
   site.ts  utils.ts
 stores/                ← Zustand slices (workflow draft, UI prefs)
 hooks/                 ← use-job-polling, use-project(s), use-presets, use-recipients,
-                         use-packages, use-analytics, use-settings, use-stats,
-                         use-debounced-value
+                         use-settings, use-stats, use-debounced-value,
+                         use-dismissible-menu, use-has-mounted, use-in-view, use-scrolled
 types/                 ← domain.ts, marketing.ts, re-exported from index.ts
 test/                  ← render helpers, cookie jar, in-memory DB for *.test.tsx
 drizzle/               ← generated migrations for the auth schema
@@ -138,6 +167,12 @@ holds the `/settings` → `/settings/avatar` redirect in config rather than in a
 `page.tsx`, so it is not a file anyone can later add a side effect to.
 `vitest.config.mts` resolves `@/` explicitly rather than reading tsconfig paths,
 which otherwise makes every worker time out once `.next` grows.
+
+**`/campaigns` and `/analytics` are gone.** Their routes and components were
+deleted in commit `e5182d8`. `specs/005`, `specs/006` and their
+`docs/screens.md` sections remain the contract of record if they return. The
+seam methods and mock history behind them still exist. The `eslint.config.mjs`
+block guarding the campaigns tree is harmless until then; leave it.
 
 **Why `(app)` has two nested groups.** The app shell cannot both live in the
 workspace root layout and be absent from the workflow — everything under `(app)`
@@ -270,8 +305,10 @@ alone for the same reason spec numbers are never reused.
 - `docs/design-system.md` — colour tokens, type scale, motion, component
   contracts. Read before building or restyling any component.
 - `docs/screens.md` — per-screen specs for the marketing and auth pages, the
-  shell, dashboard, campaigns, analytics, all 7 workflow steps and all 9
-  settings sections. Read before building a screen.
+  first-run setup and sample project (specified, not built), the shell,
+  dashboard, all 7 workflow steps and all 9 settings sections. Campaigns and
+  analytics are still described there, but are marked as not in the tree.
+  Read before building a screen.
 - `docs/data-model.md` — domain types, the `lib/api` seam, the auth schema, mock
   adapter rules and job-polling rules. Read before touching data flow.
 - `specs/` — numbered implementation specs: what we are building next, why, and

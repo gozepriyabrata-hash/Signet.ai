@@ -111,14 +111,29 @@ describe("resumeStepFor · statuses that name exactly one step", () => {
   });
 });
 
-describe("resumeStepFor · draft spans two steps", () => {
-  it("sends an empty draft to the report step", () => {
-    expect(resumeStepFor(project({ status: "draft" }))).toBe("report");
+describe("resumeStepFor · draft spans the first four steps", () => {
+  it("sends an empty draft to the avatar step", () => {
+    expect(resumeStepFor(project({ status: "draft" }))).toBe("avatar");
   });
 
-  it("sends a draft with a parsed report to the recipient step", () => {
+  it("sends a draft with an avatar chosen to the report step", () => {
+    expect(
+      resumeStepFor(project({ status: "draft" }), { avatarId: "avt_1" }),
+    ).toBe("report");
+  });
+
+  it("sends a draft with a parsed report to the voice step", () => {
     expect(
       resumeStepFor(project({ status: "draft", report: PARSED_REPORT })),
+    ).toBe("voice");
+  });
+
+  it("sends a draft with a voice chosen to the recipient step", () => {
+    expect(
+      resumeStepFor(project({ status: "draft", report: PARSED_REPORT }), {
+        avatarId: "avt_1",
+        voiceId: "voi_1",
+      }),
     ).toBe("recipient");
   });
 
@@ -129,6 +144,7 @@ describe("resumeStepFor · draft spans two steps", () => {
           status: "draft",
           report: { ...PARSED_REPORT, status: "parsing" },
         }),
+        { avatarId: "avt_1" },
       ),
     ).toBe("report");
   });
@@ -142,6 +158,7 @@ describe("resumeStepFor · failed resolves to the step that failed", () => {
           status: "failed",
           report: { ...PARSED_REPORT, status: "failed" },
         }),
+        { avatarId: "avt_1" },
       ),
     ).toBe("report");
   });

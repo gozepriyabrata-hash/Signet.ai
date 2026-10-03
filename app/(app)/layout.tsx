@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { brandFont } from "@/app/fonts";
 import { Providers } from "@/app/(app)/providers";
-import { UI_STORAGE_KEY } from "@/stores/ui-store";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 import "@/app/globals.css";
@@ -11,7 +10,7 @@ import "@/app/globals.css";
  * Root layout #2 — the workspace shell.
  *
  * Owns only what a root layout must: <html>, <body>, the shared font and the
- * providers. The navbar and sidebar live one level down in `(shell)`, so the
+ * providers. The navbar lives one level down in `(shell)`, so the
  * `(focus)` group beside it can render workflow routes with no sidebar at all
  * (specs/003-dashboard.md §3.1).
  *
@@ -28,25 +27,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/**
- * Runs before first paint, so the sidebar renders at its saved width on the
- * very first frame instead of rendering expanded and snapping shut. This is the
- * same trick next-themes performs for the theme, applied to the one other
- * preference visible before React runs.
- *
- * Reads the exact key and shape the persist middleware writes — see the
- * COUPLING WARNING in stores/ui-store.ts. Wrapped in try/catch because
- * localStorage throws outright in some privacy modes.
- */
-const SIDEBAR_PREPAINT = `
-try {
-  var raw = localStorage.getItem(${JSON.stringify(UI_STORAGE_KEY)});
-  if (raw && JSON.parse(raw).state.sidebarCollapsed) {
-    document.documentElement.dataset.sidebar = 'collapsed';
-  }
-} catch (e) {}
-`;
-
 export default function AppRootLayout({
   children,
 }: {
@@ -58,14 +38,9 @@ export default function AppRootLayout({
     // not mask mismatches anywhere else in the tree.
     <html
       lang="en"
-      // `group/shell` lets descendants react to the data-sidebar attribute the
-      // pre-paint script stamps here (see components/shell/Sidebar.tsx).
-      className={`${brandFont.variable} group/shell`}
+      className={brandFont.variable}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: SIDEBAR_PREPAINT }} />
-      </head>
       <body className="font-sans">
         <Providers>{children}</Providers>
       </body>

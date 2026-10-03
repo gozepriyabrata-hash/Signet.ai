@@ -369,6 +369,19 @@ shared-element transition, a gesture-driven drag — that is a spec, not an
   the bottom of `app/globals.css`** — apply the class, do not re-declare the
   animation. The `prefers-reduced-motion` block above it collapses every
   `animation-duration` to `0.01ms`, which stops this one too.
+- **The first-send celebration** is the second, and last, named animation —
+  *specified, not built* (`specs/018` §3.5). A one-shot (~1.2s) confetti
+  burst on the Send success state, only on the workspace's first ever send.
+  It ships as a `@keyframes` block beside `generation-pulse` in
+  `app/globals.css`, animates `transform` and `opacity` only, draws its
+  particles in the artwork-only pastels (a rendered-artwork use, which is what
+  §1 exports them for), and is `aria-hidden`. Under `prefers-reduced-motion`
+  it does not render at all. The success heading carries the moment alone.
+  Never on *ready*, never on a sample, and never a second time.
+- **150–200ms is the feedback band; 250ms is not a mistake.** Outside
+  reviews keep proposing "fade/slide 150–200ms" for everything. Step
+  transitions stay at 250ms, because they are the one motion that should read
+  as forward progress rather than as a response to a click.
 - Animate `transform` and `opacity` only — never `width`, `height`, `top`, `left`.
 - Under `prefers-reduced-motion`, drop every transform and keep opacity only.
 
@@ -452,6 +465,12 @@ rather than decorative.
 Centred, muted, exactly one primary action as a bone-white pill. Used for the
 zero-project dashboard, no recipients, and no analytics data.
 
+*Specified, not built* (`specs/018` §3.4): an optional `artwork` slot, so an
+empty state is "illustration + one clear CTA" rather than text alone. The
+artwork may use the artwork-only pastels. The slot is the only place they
+appear on an empty state, never on its title, description or action. It is a
+hand-drawn inline SVG, not a stock illustration pack.
+
 ### `StatCard`
 `label`, `value`, `delta?`, `href?`.
 
@@ -477,6 +496,19 @@ gradients.
 - Read-only rendering of AI output.
 - Icon-only buttons without an accessible label.
 - Layout shift when async content lands — skeletons match final dimensions.
+- **Whimsical button labels.** "Make magic" in place of "Generate video". A
+  button names its verb and its object. Warmth belongs in descriptions, empty
+  states and success headings. At the irreversible end the labels are fixed:
+  **Approve & Send**, and **Send it** in the confirm dialog (`specs/018` §3.8).
+- **Status lines that name work not happening.** "Cloning your voice…" during
+  a render that uses a stock voice. Stage copy may be warm, but each line must
+  describe what the job is doing at that moment (rule 5, `specs/018` §3.7).
+- **Streaks, loss framing, reward-per-screen.** A factual wins line is fine;
+  a counter that punishes a quiet week is pressure on sends that are meant to
+  be considered. One celebration, at a real milestone (`specs/018` §4.3–§4.4).
+- **Optimistic job or send state.** Drafts may update optimistically; a job
+  result or a "Sent" never renders before the server confirms it.
+
 
 ---
 

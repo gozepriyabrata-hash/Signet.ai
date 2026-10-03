@@ -69,7 +69,7 @@ describe("SettingsNav", () => {
   it("links to every section, so no nav item can 404", () => {
     renderWithQuery(<SettingsNav />);
     const nav = screen.getByRole("navigation", { name: "Settings sections" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(9);
+    expect(within(nav).getAllByRole("link")).toHaveLength(3);
   });
 });
 

@@ -145,6 +145,13 @@ Settings, where "stand-in ready" means "a preset exists". Presets are also
 archived rather than deleted (`specs/008` §3.3), which the PRD does not ask
 for and which a sent package requires.
 
+**A first-run pass over that same setup is specified in `specs/018`**: a
+skippable three-screen `/welcome` (presenter, brand, first recipient or a
+sample), reached only from signup. It writes the same preset kinds, so it adds
+no setup area and no storage. Its presenter screen hands a custom face or voice
+off to `/settings/avatar` and `/settings/voice` rather than cloning inline, so
+setup area 1's "record clear permission" keeps exactly one path.
+
 ---
 
 ## 4. The eight setup areas, and the nine Settings routes
@@ -244,7 +251,9 @@ backend lands:**
    Review checklist or `/settings` carries a disclosure line. This is the
    largest gap between the PRD and the build, it is an obligation rather than a
    feature, and it cannot be answered by a setting that can be switched off. See
-   rule 13.
+   rule 13. When it lands it applies to the sample project
+   (`specs/018` §3.2) as well, and it appears in `EmailStep`'s recipient-view
+   preview first (`specs/018` §3.10).
 2. **No provenance trail.** "Show where it came from. Every clip, line, or email
    points back to the video, idea, or report it was made from." `Analysis`
    carries `executiveSummary`, `keyInsights` and `talkingPoints`, none of which

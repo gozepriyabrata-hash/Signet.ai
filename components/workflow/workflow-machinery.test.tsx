@@ -122,7 +122,12 @@ describe("WorkflowStepper", () => {
       within(nav)
         .getAllByRole("link")
         .map((link) => link.getAttribute("href")),
-    ).toEqual(["/projects/prj_1/report", "/projects/prj_1/recipient"]);
+    ).toEqual([
+      "/projects/prj_1/avatar",
+      "/projects/prj_1/report",
+      "/projects/prj_1/voice",
+      "/projects/prj_1/recipient",
+    ]);
   });
 });
 

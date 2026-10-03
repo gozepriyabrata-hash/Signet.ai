@@ -1,3 +1,4 @@
+import type { WorkflowDraft } from "@/stores/workflow-store";
 import type { Project, WorkflowStepId } from "@/types";
 
 /**
@@ -11,10 +12,13 @@ import type { Project, WorkflowStepId } from "@/types";
  * declaring a second copy of it that drifts.
  */
 
-/** Six routes, seven steps. Send is the confirmed state of Review, not a step
- *  of its own — specs/001 §3, and the reason rule 2 is enforceable at all. */
+/** Eight routes. Send is the confirmed state of Review, not a step of its own —
+ *  specs/001 §3, and the reason rule 2 is enforceable at all. Avatar and Voice
+ *  were added by direct instruction; their choice lives in the draft store. */
 export const WORKFLOW_STEP_ORDER = [
+  "avatar",
   "report",
+  "voice",
   "recipient",
   "analysis",
   "video",
@@ -25,17 +29,19 @@ export const WORKFLOW_STEP_ORDER = [
 /**
  * "This step has produced its output."
  *
- * Steps 1–5 only. `review` is terminal, so it is what remains when everything
+ * Every step but Review. `review` is terminal, so it is what remains when everything
  * before it is done rather than something with a completion test of its own.
  */
 const PRODUCED_ITS_OUTPUT: readonly {
   step: WorkflowStepId;
-  done: (project: Project) => boolean;
+  done: (project: Project, draft: WorkflowDraft) => boolean;
 }[] = [
+  { step: "avatar", done: (_, draft) => draft.avatarId !== undefined },
   // A report still uploading, still parsing, or failed is NOT done. The Report
   // step is where its progress and its Retry live, so that is where a user has
   // to land for the failure to be recoverable in place (CLAUDE.md rule 5).
   { step: "report", done: (project) => project.report?.status === "parsed" },
+  { step: "voice", done: (_, draft) => draft.voiceId !== undefined },
   { step: "recipient", done: (project) => project.recipient !== undefined },
   { step: "analysis", done: (project) => project.analysis !== undefined },
   // A VideoAsset exists as soon as its render job is queued — it carries a
@@ -45,9 +51,36 @@ const PRODUCED_ITS_OUTPUT: readonly {
   { step: "email", done: (project) => project.email !== undefined },
 ];
 
-function firstUnfinishedStep(project: Project): WorkflowStepId {
+/** Steps whose output lives only in the browser's draft store. */
+const DRAFT_ONLY: readonly WorkflowStepId[] = ["avatar", "voice"];
+
+/**
+ * Avatar and Voice are chosen into a draft the caller may not have (the
+ * resume redirect does not read it, and it is cleared after send), so either
+ * also counts as done once any later step has produced its output — the
+ * workflow cannot be passed without them. Every other step answers from the
+ * project alone.
+ */
+function doneSteps(
+  project: Project,
+  draft: WorkflowDraft,
+): readonly WorkflowStepId[] {
+  const raw = PRODUCED_ITS_OUTPUT.map(({ done }) => done(project, draft));
+  return PRODUCED_ITS_OUTPUT.filter(
+    ({ step }, index) =>
+      raw[index] ||
+      (DRAFT_ONLY.includes(step) && raw.slice(index + 1).some(Boolean)),
+  ).map(({ step }) => step);
+}
+
+function firstUnfinishedStep(
+  project: Project,
+  draft: WorkflowDraft,
+): WorkflowStepId {
+  const done = doneSteps(project, draft);
   return (
-    PRODUCED_ITS_OUTPUT.find(({ done }) => !done(project))?.step ?? "review"
+    PRODUCED_ITS_OUTPUT.find(({ step }) => !done.includes(step))?.step ??
+    "review"
   );
 }
 
@@ -56,18 +89,20 @@ function firstUnfinishedStep(project: Project): WorkflowStepId {
  *
  * Most statuses name exactly one step. Two do not, and both defer to the data:
  *
- * - `draft` spans steps 1 and 2 — a project stays a draft from creation until
- *   analysis begins, which covers both "no report yet" and "report uploaded,
- *   no recipient yet".
+ * - `draft` spans steps 1–4 — a project stays a draft from creation until
+ *   analysis begins, which covers avatar, report, voice and recipient.
  * - `failed` can be reached from any step, and `Project` does not record which
  *   one failed. The first step that has not produced its output IS the step
  *   that failed, so the same walk answers both.
  */
-export function resumeStepFor(project: Project): WorkflowStepId {
+export function resumeStepFor(
+  project: Project,
+  draft: WorkflowDraft = {},
+): WorkflowStepId {
   switch (project.status) {
     case "draft":
     case "failed":
-      return firstUnfinishedStep(project);
+      return firstUnfinishedStep(project, draft);
     case "analysing":
       return "analysis";
     case "video_pending":
@@ -92,10 +127,11 @@ export function resumeStepFor(project: Project): WorkflowStepId {
  * condition is a human approving a send rather than a field being present;
  * that is Review's own business, not the stepper's.
  */
-export function completedStepsFor(project: Project): readonly WorkflowStepId[] {
-  return PRODUCED_ITS_OUTPUT.filter(({ done }) => done(project)).map(
-    ({ step }) => step,
-  );
+export function completedStepsFor(
+  project: Project,
+  draft: WorkflowDraft = {},
+): readonly WorkflowStepId[] {
+  return doneSteps(project, draft);
 }
 
 /**
@@ -105,6 +141,6 @@ export function completedStepsFor(project: Project): readonly WorkflowStepId[] {
  * `Project.recipient` may ever be added here — recipient fields are client PII
  * and a URL is the one place CLAUDE.md rule 11 names explicitly.
  */
-export function resumeHref(project: Project): string {
-  return `/projects/${project.id}/${resumeStepFor(project)}`;
+export function resumeHref(project: Project, draft: WorkflowDraft = {}): string {
+  return `/projects/${project.id}/${resumeStepFor(project, draft)}`;
 }

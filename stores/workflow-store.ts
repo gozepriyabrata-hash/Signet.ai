@@ -46,6 +46,9 @@ export interface RecipientDraft {
 }
 
 export interface WorkflowDraft {
+  /** Chosen on the Avatar and Voice steps, read by the Video step. */
+  avatarId?: string;
+  voiceId?: string;
   recipient?: Partial<RecipientDraft>;
   /** Analysis edits, held until Next commits them. */
   executiveSummary?: string;

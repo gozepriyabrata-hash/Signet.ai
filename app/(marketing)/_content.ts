@@ -464,7 +464,7 @@ const privacyPolicySections: readonly PolicySection[] = [
     },
     {
       heading: "Cookies and local storage",
-      body: "One cookie is essential: the signed session cookie that keeps you logged in. It is httpOnly (a script on the page cannot read it) and holds nothing but an internal account reference — no name, no email. Your theme and sidebar-width preferences are saved in your browser's local storage, not a cookie, and never leave your device.",
+      body: "One cookie is essential: the signed session cookie that keeps you logged in. It is httpOnly (a script on the page cannot read it) and holds nothing but an internal account reference — no name, no email. Your theme preference is saved in your browser's local storage, not a cookie, and never leaves your device.",
     },
     {
       heading: "What this product does not do",

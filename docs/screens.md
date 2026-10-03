@@ -153,6 +153,69 @@ because it is the one document a reader is entitled to take literally.
 nothing in the product yet needs one.
 ---
 
+## First run — `app/(app)/(setup)/welcome/` · **specified, not built**
+
+**Purpose:** get a brand-new workspace from "account created" to "I've seen
+what this makes" before asking for a real client document. Decided in
+`specs/018-first-run-and-delight-layer.md`, from the "Better Flow After Create
+Workspace" board.
+
+**Entry:** only `signupAction`'s redirect. `loginAction` still goes to
+`/dashboard`. The redirect target *is* the first-run detector: there is no flag,
+no column and no derivation (the mock is global, so a derivation would never
+fire — `specs/018` §2).
+
+```
+  1 of 3                                                [ Skip ]
+  ┌──────────────────────────────────────────────────┐
+  │  Who presents your videos?                        │
+  │  ( Priya — Executive )  ( Daniel — Approachable ) │
+  │  ( Priya Voice )        ( Daniel Voice )          │
+  │  Use my own face or voice →   (opens Settings)    │
+  │                                     [ Continue ]  │
+  └──────────────────────────────────────────────────┘
+```
+
+| # | Screen | Controls (≤ 3) | Writes to |
+|---|---|---|---|
+| 1 | Presenter | stock avatar · stock voice · "use my own" link | `avatar` / `voice` default preset |
+| 2 | Brand | logo upload · one brand colour | `branding` default preset |
+| 3 | First recipient | name · email, **or** "Try with a sample instead" | saved-recipient store |
+
+- **Every screen is skippable**, and skipping keeps the seeded default. The
+  setup is never a gate in front of the workspace.
+- **No new storage.** Each screen writes the same preset kinds its
+  `/settings/*` section edits, so everything set here can be changed there
+  later (rule 1).
+- **"Use my own" does not clone inline.** It hands off to `/settings/avatar`
+  or `/settings/voice`, where `UploadPanel` and `VoiceSettings`' "whose voice
+  is this?" step already live (rule 13b). A second, lighter clone path would
+  be a consent step with a shortcut around it.
+- **Progress is a plain "1 of 3" line**, not a `WorkflowStepper`. The stepper
+  means the golden path.
+- **No sidebar.** It is its own non-root group, alongside `(shell)` and
+  `(focus)`. `(focus)` renders `WorkflowChrome`, which is project-bound.
+- **Exit:** screen 3's primary goes to `/dashboard`. Its secondary, "Try with
+  a sample instead", creates the sample project (below) and lands on its
+  Report step.
+
+### The sample project · **specified, not built**
+
+A project created from a bundled sample report and a fictional recipient,
+flagged `Project.isSample`. It runs the ordinary seven steps with the ordinary
+components and jobs. It is the "30-second aha": the mock's job durations sum
+to about 29s.
+
+- Carries a **"Sample" badge** everywhere it renders (workflow header,
+  `/projects`).
+- **Review renders no Approve & Send on a sample.** The control is absent, not
+  disabled, and a single primary, **"Start with your own report"**, takes its
+  place (Step 6 below).
+- When the real adapter lands, the sample's video is a **pre-rendered asset**,
+  not a live render, or the 30-second promise breaks the day the backend ships.
+
+---
+
 ## App shell — `app/(app)/(shell)/layout.tsx`
 
 There is no top-level `app/layout.tsx`. `(marketing)` and `(app)` each own a
@@ -309,9 +372,10 @@ text) — none of which this product has a route, type or spec for.
 
 **The stat tiles, Recent Projects list and the Projects/Campaigns/Analytics
 quick-action cards are all gone, by direct instruction** (specs/015 §8, §9),
-not folded into the rule-1 reasoning above. `StatRow`, `RecentProjects`,
-`ProjectRow` and `QuickActions` still exist in `components/dashboard/` and
-still pass their own tests; nothing currently renders any of them. Whoever
+not folded into the rule-1 reasoning above. `StatRow`, `RecentProjects` and
+`ProjectRow` still exist in `components/dashboard/` and still pass their own
+tests; nothing currently renders any of them. `QuickActions` was deleted
+outright once `/campaigns` and `/analytics` left the workspace. Whoever
 picks this up next should either restore them somewhere (this page, or a
 future screen — `Sidebar.tsx` already covers the same three destinations
 `QuickActions` linked to) or delete them outright — leaving them un-rendered
@@ -326,9 +390,22 @@ is resolved client-side, via `useSyncExternalStore`, because the server's
 clock/timezone is not the visitor's. This is also why `/dashboard` is now
 `ƒ` (server-rendered per request) rather than `○` — the one runtime-API read
 (`getCurrentAccount()`'s session-cookie check) takes the route dynamic, which
-`specs/003` §3.4 named as the expected moment for that to happen. It is
-scoped to this route only: the sidebar does not repeat the same call, so
-every other `(shell)` route stays static.
+`specs/003` §3.4 named as the expected moment for that to happen. Since
+`specs/015` §15 gave `Sidebar`'s footer the real account name,
+`ShellLayout` makes the same (`cache()`-memoised) call, so every `(shell)`
+route is dynamic now, not only this one.
+
+**First-run additions — specified, not built (`specs/018` §3.3, §4.3):**
+
+- **"No report handy? Try a sample."** A text link under the field, shown
+  only while the workspace has no non-sample project. Never a second pill:
+  "Start" is the screen's one primary. (With today's global mock, every
+  session sees seeded projects, so this condition cannot fire until the mock
+  is scoped per account.)
+- **A wins line** — e.g. "3 packages sent this week" — from the stats seam,
+  shown only when non-zero. **No streak, no comparison, no loss framing.** A
+  counter that punishes a quiet week pressures sends that are supposed to be
+  considered and human-approved.
 
 **Data:** none. The one server read left on this route is
 `getCurrentAccount()` for the greeting's name; the hero CTA is a mutation
@@ -404,6 +481,11 @@ more column is exactly where a "Client" column gets added.
 
 ## Campaigns — `app/(app)/(shell)/campaigns/page.tsx`
 
+> **Not in the tree.** The route and its `components/` folder were deleted in
+> commit `e5182d8`. The section is kept as the contract of record (specs/005,
+> specs/006) if the screen is restored. Do not cite it as shipped behaviour.
+
+
 **Purpose:** answer "what have we actually sent, and to whom?". This is the
 record of finished work, distinct from `/projects`, which is the record of work
 in flight. It is where the Send success state's **View in Campaigns** lands, and
@@ -474,6 +556,11 @@ card with Retry.
 
 ## Campaign — `app/(app)/(shell)/campaigns/[id]/page.tsx`
 
+> **Not in the tree.** The route and its `components/` folder were deleted in
+> commit `e5182d8`. The section is kept as the contract of record (specs/005,
+> specs/006) if the screen is restored. Do not cite it as shipped behaviour.
+
+
 **Purpose:** the record of one sent package — what went out, to whom, and who
 approved it. Read-only.
 
@@ -534,6 +621,11 @@ client-side because the mock store lives in the browser.
 ---
 
 ## Analytics — `app/(app)/(shell)/analytics/page.tsx`
+
+> **Not in the tree.** The route and its `components/` folder were deleted in
+> commit `e5182d8`. The section is kept as the contract of record (specs/005,
+> specs/006) if the screen is restored. Do not cite it as shipped behaviour.
+
 
 **Purpose:** answer "what did we make, how much of it went out, and where does
 the work get stuck?". It reports on **production, not performance** — the
@@ -885,6 +977,16 @@ step), the full package preview, Edit, and Approve & Send.
   their email address. This is the last irreversible moment — spell out exactly
   what is about to happen and to whom.
 - No auto-send. No send from a keyboard shortcut. No send on mount.
+- No "approve all" and no skip-to-Review shortcut anywhere upstream. The
+  "auto-fill from report" the delight board asks for is already every step's
+  generated-and-editable fields (rule 4); approval stays a person reading
+  them (`specs/018` §3.6).
+- **On a sample project** (`isSample`) — *specified, not built*: the whole
+  package and checklist render, **Approve & Send is absent**, and the single
+  primary is **"Start with your own report"**. It is absent rather than
+  disabled because a sample can never send, and a disabled button reads as
+  "not yet". `eslint.config.mjs`'s one-file `sendPackage` allow-list does not
+  change.
 
 **Entry:** email complete. **Exit:** user approves.
 **Data:** `qk.packageForProject(projectId)`, `sendPackage` mutation. NOT
@@ -897,13 +999,23 @@ things at once until `specs/005-campaigns.md` §3.2 split them.
 Not a separate route — the confirmed state of Review.
 
 Shows a success panel with what was sent, when, and to whom, plus three next
-actions: **View in Campaigns** — `/campaigns/{package.id}`, the detail page
+actions (*View in Campaigns* has no target while `/campaigns` is out of the
+tree — see that section's note): **View in Campaigns** — `/campaigns/{package.id}`, the detail page
 rather than the list, because the user has just sent this package and making
 them find it again is a strange reward — **Duplicate for another recipient** (the
 highest value follow-on — same report, new recipient context), and **Back to
 Dashboard**.
 While sending, the button shows a determinate progress state; a failure keeps
 the user on Review with the error inline and the package intact.
+
+**The first-send celebration — specified, not built (`specs/018` §3.5).** On
+the workspace's first ever successful send (`DashboardStats.emailsSent === 1`
+on the success render), and only then: a one-shot CSS confetti keyframe in the
+artwork pastels, `aria-hidden`, which does not run at all under
+`prefers-reduced-motion`, plus the heading *"Your first package is on its
+way."* It fires on **sent**, not on *ready*, because "ready" means the AI
+finished and nobody has reviewed it yet. It never fires on a sample, because a
+sample cannot send.
 
 ---
 

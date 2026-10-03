@@ -88,7 +88,8 @@ export function ReportStep({ projectId }: { projectId: string }) {
     <StepShell
       title="Upload the report"
       description="The client report this communication is built from. It is parsed for insights and attached to the package that goes out."
-      onNext={parsed ? () => router.push(`/projects/${projectId}/recipient`) : undefined}
+      onBack={() => router.push(`/projects/${projectId}/avatar`)}
+      onNext={parsed ? () => router.push(`/projects/${projectId}/voice`) : undefined}
       nextDisabled={!parsed}
       nextLabel="Continue"
     >

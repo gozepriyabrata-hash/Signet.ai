@@ -13,7 +13,9 @@ export type ProjectStatus =
   | "failed";
 
 export type WorkflowStepId =
+  | "avatar"
   | "report"
+  | "voice"
   | "recipient"
   | "analysis"
   | "video"

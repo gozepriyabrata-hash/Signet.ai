@@ -55,16 +55,13 @@ const ITEM_CLASS =
   "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-light text-foreground transition-colors duration-150 ease-out hover:bg-border focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground";
 
 /**
- * The sidebar footer's account control (specs/015-dashboard-redesign.md
- * §15) — replaces the standalone Settings link (§13) and sign-out icon with
+ * The navbar's account control, top right (it began in the sidebar footer,
+ * specs/015-dashboard-redesign.md §15) — replaces the standalone Settings link (§13) and sign-out icon with
  * one avatar + name trigger, so the footer needs only this and the collapse
  * toggle. Opening it reveals the three-way theme picker and sign-out.
  *
- * The menu opens *above* the trigger (`bottom-full`) — the mirror image of
- * `DashboardHeader`'s "+" menu, which opens below (§14). Both are correct
- * for where they sit: this trigger is pinned to the bottom of the viewport,
- * so opening upward is the direction with room; the dashboard card's "+"
- * sits near the top of its card, so opening downward is.
+ * The menu opens below the trigger, right-aligned, since the trigger sits
+ * at the top-right edge of the viewport.
  *
  * The three theme swatches are not shown until "Theme" itself is tapped
  * (§16) — the first pass showed all three the moment the account menu
@@ -91,14 +88,14 @@ export function ProfileMenu({ name }: { name: string | null }) {
   const shortName = initials(name);
 
   return (
-    <div className="relative w-full">
+    <div className="relative">
       <button
         ref={triggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => (open ? closeAll() : setOpen(true))}
-        className="flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground group-data-[sidebar=collapsed]/shell:justify-center"
+        className="flex items-center gap-2.5 rounded-md p-2 text-left text-sm font-light tracking-[0.01em] text-body-foreground transition-colors duration-150 ease-out hover:bg-surface hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
       >
         <span
           aria-hidden="true"
@@ -106,7 +103,7 @@ export function ProfileMenu({ name }: { name: string | null }) {
         >
           {shortName || <User aria-hidden="true" className="size-3.5" />}
         </span>
-        <span className="truncate group-data-[sidebar=collapsed]/shell:sr-only">
+        <span className="max-w-40 truncate">
           {displayName}
         </span>
       </button>
@@ -116,7 +113,7 @@ export function ProfileMenu({ name }: { name: string | null }) {
           ref={menuRef}
           role="menu"
           aria-label="Account"
-          className="absolute bottom-full left-0 z-10 mb-2 w-56 overflow-hidden rounded-xl border border-border bg-surface-raised py-1 shadow-lg"
+          className="absolute top-full right-0 z-10 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-surface-raised py-1 shadow-lg"
         >
           <button
             type="button"

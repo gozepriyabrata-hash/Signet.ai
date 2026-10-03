@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ProfileMenu } from "@/components/shell/ProfileMenu";
 import { SITE_NAME } from "@/lib/site";
 
 /**
@@ -14,17 +15,21 @@ import { SITE_NAME } from "@/lib/site";
  * are now the only theme control, so a second one here was a duplicate
  * surface for the same setting, and one that could not represent all three
  * themes besides.
+ *
+ * The account menu sits on the right, moved up from the sidebar footer by
+ * direct instruction.
  */
-export function Navbar() {
+export function Navbar({ accountName }: { accountName: string | null }) {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background">
-      <div className="flex h-(--nav-height) items-center px-6 lg:px-8">
+      <div className="flex h-(--nav-height) items-center justify-between px-6 lg:px-8">
         <Link
           href="/dashboard"
           className="text-base font-normal text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
         >
           {SITE_NAME}
         </Link>
+        <ProfileMenu name={accountName} />
       </div>
     </header>
   );

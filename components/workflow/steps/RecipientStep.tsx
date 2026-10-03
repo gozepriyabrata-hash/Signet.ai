@@ -235,7 +235,7 @@ function RecipientForm({ project }: { project: Project }) {
     <StepShell
       title="Who is this for?"
       description="This is what the analysis and the script are personalised against. It stays in this workspace."
-      onBack={() => router.push(`/projects/${projectId}/report`)}
+      onBack={() => router.push(`/projects/${projectId}/voice`)}
       onNext={handleSubmit((values) => analyse.mutate(values))}
       nextDisabled={!isValid}
       nextLabel="Analyse the report"

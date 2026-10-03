@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -18,25 +17,13 @@ import { useWorkflowStore } from "@/stores/workflow-store";
 import type { PresetKind, VideoAsset, VideoFormat } from "@/types";
 
 /**
- * Step 4 — the Video Studio, and the screen where rule 1 is either kept or lost.
+ * Step 6 — the Video Studio, and the screen where rule 1 is either kept or lost.
  *
- * ── Exactly five controls ───────────────────────────────────────────────────
- * Avatar, Voice, Style, Format, Captions. That is `VideoOptions` in full, and
- * `types/domain.ts` already comments that branding "is applied from the active
- * brand preset, not chosen here". Branding renders as a read-only line naming
- * the preset; the moment it becomes a picker this step has six controls and the
- * rule has started sliding.
- *
- * Each dropdown lists presets from Settings and **cannot create one**. There is
- * no "＋ New avatar" at the bottom of the list, and adding one would be the end
- * of rule 1 — a step that can write presets is a configuration surface, and
- * there is no principled line between one inline creator and fifteen.
- *
- * The "Manage in Settings" links below were deliberately absent until specs/008
- * built the sections they point at — shipping a 404 from inside the core flow
- * is the bug spec 001 was written to eliminate. They are links out of the
- * workflow rather than a modal, because a step that can open a preset editor is
- * a step that can create presets, and rule 1 does not survive that.
+ * ── Three controls ──────────────────────────────────────────────────────────
+ * Style, Format, Captions. Avatar and Voice are chosen on their own steps
+ * earlier in the workflow (by direct instruction) and read here from the
+ * draft; this step names them read-only. Branding renders as a read-only
+ * line naming the preset too.
  *
  * ── The script is here, and it is editable ──────────────────────────────────
  * The words the avatar will say are the highest-stakes AI output in the
@@ -81,8 +68,6 @@ export function VideoStep({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (job?.status === "succeeded") clearActiveJob(projectId, "video");
   }, [job?.status, projectId, clearActiveJob]);
-  const [avatarId, setAvatarId] = useState("");
-  const [voiceId, setVoiceId] = useState("");
   const [styleId, setStyleId] = useState("");
   const [format, setFormat] = useState<VideoFormat>("landscape");
   const [captions, setCaptions] = useState(true);
@@ -94,8 +79,9 @@ export function VideoStep({ projectId }: { projectId: string }) {
   const generate = useMutation({
     mutationFn: () =>
       api.generateVideo(projectId, {
-        avatarId: avatarId || avatars.data?.[0]?.id || "avt_default",
-        voiceId: voiceId || voices.data?.[0]?.id || "voi_default",
+        // Chosen on the Avatar and Voice steps.
+        avatarId: draft?.avatarId || avatars.data?.[0]?.id || "avt_default",
+        voiceId: draft?.voiceId || voices.data?.[0]?.id || "voi_default",
         scriptStyleId: styleId || styles.data?.[0]?.id || "sty_executive",
         format,
         captions,
@@ -192,8 +178,6 @@ export function VideoStep({ projectId }: { projectId: string }) {
           </div>
 
           <div className="space-y-5">
-            {select("avatar", "Avatar", avatarId, setAvatarId, avatars.data)}
-            {select("voice", "Voice", voiceId, setVoiceId, voices.data)}
             {select("style", "Style", styleId, setStyleId, styles.data)}
 
             <fieldset className="space-y-2">
@@ -241,14 +225,9 @@ export function VideoStep({ projectId }: { projectId: string }) {
               automatically.
             </p>
 
-            {/* A navigation away, not a way to configure from here. */}
             <p className="text-sm font-light tracking-[0.01em] text-muted-foreground">
-              <Link
-                href="/settings/avatar"
-                className="rounded-full underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-              >
-                Manage avatars, voices and branding in Settings
-              </Link>
+              Avatar: {avatars.data?.find((p) => p.id === draft?.avatarId)?.name ?? avatars.data?.[0]?.name ?? "Default"}
+              {" · "}Voice: {voices.data?.find((p) => p.id === draft?.voiceId)?.name ?? voices.data?.[0]?.name ?? "Default"}
             </p>
 
             {!job || job.status === "failed" || rendered ? (

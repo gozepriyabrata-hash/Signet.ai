@@ -35,8 +35,10 @@ import type { WorkflowStepId } from "@/types";
  */
 
 const STEP_LABEL: Record<WorkflowStepId, string> = {
+  avatar: "Avatar",
   report: "Report",
-  recipient: "Recipient",
+  voice: "Voice",
+  recipient: "Recipients",
   analysis: "Analysis",
   video: "Video",
   email: "Email",

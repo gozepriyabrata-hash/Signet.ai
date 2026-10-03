@@ -1,29 +1,19 @@
 import { Navbar } from "@/components/shell/Navbar";
-import { Sidebar } from "@/components/shell/Sidebar";
 import { getCurrentAccount } from "@/lib/auth/dal";
 
 /**
- * The workspace chrome — navbar and collapsible sidebar.
+ * The workspace chrome — the navbar. The sidebar was removed by direct
+ * instruction; New Chat is the logo link to /dashboard now.
  *
  * This is NOT a root layout. `app/(app)/layout.tsx` above it owns <html>,
  * <body>, the font and the providers; this group owns only the chrome, so that
- * the `(focus)` group beside it can render workflow routes with no sidebar at
- * all rather than hiding one conditionally. See specs/003-dashboard.md §3.1.
+ * the `(focus)` group beside it can render workflow routes without it.
+ * See specs/003-dashboard.md §3.1.
  *
- * `async` now, for `getCurrentAccount()` — `Sidebar`'s footer shows the
- * signed-in account's real name (specs/015-dashboard-redesign.md §15), and
- * `Sidebar` renders here, once, for every `(shell)` route. Until §15,
- * `dashboard/page.tsx` was the only place in the shell that read the session
- * and went dynamic as a result; that read now happens here instead, which
- * means every `(shell)` route is dynamic, not just `/dashboard`. That is a
- * direct, accepted consequence of a real name on every page rather than an
- * oversight — see §15 for the full reasoning. `getCurrentAccount` is wrapped
- * in React's `cache()` (`lib/auth/dal.ts`), so `dashboard/page.tsx`'s own
- * call for `DashboardHeader`'s greeting is still the same one memoised read,
- * not a second query.
- *
- * Server Component. Only the theme switch, the sidebar toggle and the
- * account menu are client.
+ * `async` for `getCurrentAccount()` — the navbar's account menu shows the
+ * signed-in name on every `(shell)` route, which makes every one of them
+ * dynamic (specs/015-dashboard-redesign.md §15). The read is memoised with
+ * React's `cache()`, so `dashboard/page.tsx`'s own call is the same read.
  */
 export default async function ShellLayout({
   children,
@@ -41,14 +31,9 @@ export default async function ShellLayout({
         Skip to content
       </a>
 
-      <Navbar />
+      <Navbar accountName={account?.name ?? null} />
 
-      <div className="flex">
-        <Sidebar accountName={account?.name ?? null} />
-        <main id="workspace-main" className="min-w-0 flex-1">
-          {children}
-        </main>
-      </div>
+      <main id="workspace-main">{children}</main>
     </>
   );
 }

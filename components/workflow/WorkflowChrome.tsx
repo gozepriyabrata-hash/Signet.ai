@@ -38,6 +38,7 @@ export function WorkflowChrome() {
   }, []);
 
   const { data: project } = useProject(projectId);
+  const draft = useWorkflowStore((state) => state.drafts[projectId]);
 
   const segment = pathname.split("/").pop() ?? "";
   const current = WORKFLOW_STEP_ORDER.find((step) => step === segment);
@@ -50,7 +51,7 @@ export function WorkflowChrome() {
     <WorkflowStepper
       projectId={projectId}
       current={current as WorkflowStepId}
-      completed={completedStepsFor(project)}
+      completed={completedStepsFor(project, draft)}
     />
   );
 }
