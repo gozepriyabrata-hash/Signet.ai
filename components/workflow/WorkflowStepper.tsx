@@ -39,7 +39,7 @@ const STEP_LABEL: Record<WorkflowStepId, string> = {
   report: "Report",
   voice: "Voice",
   recipient: "Recipients",
-  analysis: "Analysis",
+  analysis: "Summary",
   video: "Video",
   email: "Email",
   review: "Review",

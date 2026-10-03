@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { AnalysisStep } from "@/components/workflow/steps/AnalysisStep";
 
-export const metadata: Metadata = { title: "Analysis" };
+export const metadata: Metadata = { title: "Summary" };
 
 /** Step route. The screen itself is a client component — the whole workflow
  *  reads browser-resident state (specs/003 §3.3) — and the stepper above it
