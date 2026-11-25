@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { WORKFLOW_STEP_ORDER, resumeHref, resumeStepFor } from "@/lib/workflow";
 import type {
-  Analysis,
   EmailDraft,
   Project,
   ProjectStatus,
@@ -38,16 +37,6 @@ const RECIPIENT: Recipient = {
   email: "jane.fairweather@meridian.example",
   businessPriorities: ["capital preservation"],
   personalisation: "high",
-};
-
-const ANALYSIS: Analysis = {
-  id: "ana_1",
-  projectId: "prj_1",
-  executiveSummary: "Up 4.2% against a 2.8% benchmark.",
-  keyInsights: [],
-  talkingPoints: [],
-  generatedAt: "2026-08-28T10:00:00.000Z",
-  editedByUser: false,
 };
 
 const RENDERED_VIDEO: VideoAsset = {
@@ -96,12 +85,15 @@ function project(overrides: Partial<Project> = {}): Project {
 
 describe("resumeStepFor · statuses that name exactly one step", () => {
   it.each([
-    ["analysing", "analysis"],
     ["video_pending", "video"],
     ["email_pending", "email"],
     ["ready_for_review", "review"],
   ] as const)("resolves %s to %s", (status, step) => {
     expect(resumeStepFor(project({ status }))).toBe(step);
+  });
+
+  it("resolves analysing by walking unfinished steps", () => {
+    expect(resumeStepFor(project({ status: "analysing" }))).toBe("avatar");
   });
 
   it("resolves a sent project to review, because Send is Review's confirmed state", () => {
@@ -128,13 +120,13 @@ describe("resumeStepFor · draft spans the first four steps", () => {
     ).toBe("voice");
   });
 
-  it("sends a draft with a voice chosen to the recipient step", () => {
+  it("sends a draft with a voice chosen to the video step", () => {
     expect(
       resumeStepFor(project({ status: "draft", report: PARSED_REPORT }), {
         avatarId: "avt_1",
         voiceId: "voi_1",
       }),
-    ).toBe("recipient");
+    ).toBe("video");
   });
 
   it("keeps a draft on the report step while the report is still parsing", () => {
@@ -163,16 +155,16 @@ describe("resumeStepFor · failed resolves to the step that failed", () => {
     ).toBe("report");
   });
 
-  it("lands on analysis when the report and recipient are done but analysis is not", () => {
+  it("lands on video when avatar, report, and voice are done but video is not", () => {
     expect(
       resumeStepFor(
         project({
           status: "failed",
           report: PARSED_REPORT,
-          recipient: RECIPIENT,
         }),
+        { avatarId: "avt_1", voiceId: "voi_1" },
       ),
-    ).toBe("analysis");
+    ).toBe("video");
   });
 
   it("lands on video when a render was queued but produced no playable asset", () => {
@@ -181,26 +173,38 @@ describe("resumeStepFor · failed resolves to the step that failed", () => {
         project({
           status: "failed",
           report: PARSED_REPORT,
-          recipient: RECIPIENT,
-          analysis: ANALYSIS,
           // A VideoAsset carries a jobId long before it carries a playbackUrl,
           // so presence alone must not count as done.
           video: QUEUED_VIDEO,
         }),
+        { avatarId: "avt_1", voiceId: "voi_1" },
       ),
     ).toBe("video");
   });
 
-  it("lands on email when everything before it succeeded", () => {
+  it("lands on recipient when video succeeded", () => {
     expect(
       resumeStepFor(
         project({
           status: "failed",
           report: PARSED_REPORT,
-          recipient: RECIPIENT,
-          analysis: ANALYSIS,
           video: RENDERED_VIDEO,
         }),
+        { avatarId: "avt_1", voiceId: "voi_1" },
+      ),
+    ).toBe("recipient");
+  });
+
+  it("lands on email when video and recipient succeeded", () => {
+    expect(
+      resumeStepFor(
+        project({
+          status: "failed",
+          report: PARSED_REPORT,
+          video: RENDERED_VIDEO,
+          recipient: RECIPIENT,
+        }),
+        { avatarId: "avt_1", voiceId: "voi_1" },
       ),
     ).toBe("email");
   });
@@ -211,11 +215,11 @@ describe("resumeStepFor · failed resolves to the step that failed", () => {
         project({
           status: "failed",
           report: PARSED_REPORT,
-          recipient: RECIPIENT,
-          analysis: ANALYSIS,
           video: RENDERED_VIDEO,
+          recipient: RECIPIENT,
           email: EMAIL,
         }),
+        { avatarId: "avt_1", voiceId: "voi_1" },
       ),
     ).toBe("review");
   });

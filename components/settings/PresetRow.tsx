@@ -42,23 +42,36 @@ export function PresetRow({
         archived ? "opacity-60" : ""
       }`}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-normal text-foreground">{preset.name}</p>
-          {/* Neutral, not accent. A default is a state, not an AI action. */}
-          {preset.isDefault ? <Badge>Default</Badge> : null}
+      <div className="flex items-center gap-3 min-w-0">
+        {preset.thumbnailUrl ? (
+          <img
+            src={
+              preset.thumbnailUrl.startsWith("http") || preset.thumbnailUrl.startsWith("/")
+                ? (preset.thumbnailUrl.startsWith("http") ? preset.thumbnailUrl : `http://localhost:8000${preset.thumbnailUrl}`)
+                : `http://localhost:8000/${preset.thumbnailUrl}`
+            }
+            alt={preset.name}
+            className="size-10 rounded-full object-cover border border-border shrink-0 bg-surface-raised"
+          />
+        ) : null}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-normal text-foreground">{preset.name}</p>
+            {/* Neutral, not accent. A default is a state, not an AI action. */}
+            {preset.isDefault ? <Badge>Default</Badge> : null}
+          </div>
+          {preset.description ? (
+            <p className="mt-1 text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
+              {preset.description}
+            </p>
+          ) : null}
+          {archived && preset.archivedAt ? (
+            <p className="mt-1 text-sm font-light text-muted-foreground">
+              Archived {formatDate(preset.archivedAt)} · still resolves for
+              packages already sent
+            </p>
+          ) : null}
         </div>
-        {preset.description ? (
-          <p className="mt-1 text-sm font-light leading-relaxed tracking-[0.01em] text-body-foreground">
-            {preset.description}
-          </p>
-        ) : null}
-        {archived && preset.archivedAt ? (
-          <p className="mt-1 text-sm font-light text-muted-foreground">
-            Archived {formatDate(preset.archivedAt)} · still resolves for
-            packages already sent
-          </p>
-        ) : null}
       </div>
 
       <div className="flex shrink-0 flex-wrap gap-2">

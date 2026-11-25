@@ -34,6 +34,29 @@ const nextConfig: NextConfig = {
         destination: "/settings/avatar",
         permanent: false,
       },
+      {
+        source: "/projects/drafts",
+        destination: "/drafts",
+        permanent: false,
+      },
+      {
+        source: "/projects",
+        destination: "/dashboard",
+        permanent: false,
+      },
+    ];
+  },
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:8001";
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
+      },
+      {
+        source: "/api/v1/:path*",
+        destination: `${backendUrl}/api/v1/:path*`,
+      },
     ];
   },
 };

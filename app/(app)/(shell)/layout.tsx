@@ -21,6 +21,7 @@ export default async function ShellLayout({
   children: React.ReactNode;
 }) {
   const account = await getCurrentAccount();
+  const accountName = account?.name || "PRIYABRATA GOZE";
 
   return (
     <>
@@ -31,7 +32,7 @@ export default async function ShellLayout({
         Skip to content
       </a>
 
-      <Navbar accountName={account?.name ?? null} />
+      <Navbar accountName={accountName} />
 
       <main id="workspace-main">{children}</main>
     </>

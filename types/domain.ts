@@ -16,9 +16,8 @@ export type WorkflowStepId =
   | "avatar"
   | "report"
   | "voice"
-  | "recipient"
-  | "analysis"
   | "video"
+  | "recipient"
   | "email"
   | "review";
 
@@ -162,7 +161,7 @@ export interface CTA extends Preset {
   url: string;
 }
 
-export type VideoFormat = "landscape" | "portrait";
+export type VideoFormat = "landscape" | "portrait" | "square";
 
 /**
  * The exactly-five controls the Video step is allowed to expose. Branding is
@@ -173,7 +172,11 @@ export interface VideoOptions {
   voiceId: string;
   scriptStyleId: string;
   format: VideoFormat;
+  resolution?: "1080p" | "720p";
   captions: boolean;
+  scriptText?: string;
+  prompt?: string;
+  backgroundPrompt?: string;
 }
 
 export interface VideoAsset {

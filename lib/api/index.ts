@@ -9,6 +9,6 @@ import type { ApiClient } from "./types";
  * Components import `api` from `@/lib/api` — never a mock module directly.
  */
 export const api: ApiClient =
-  process.env.NEXT_PUBLIC_USE_MOCKS === "false" ? realClient : mockClient;
+  process.env.NEXT_PUBLIC_USE_MOCKS === "true" ? mockClient : realClient;
 
 export type { ApiClient } from "./types";

@@ -10,7 +10,7 @@ import type { Job, Project } from "@/types";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
-  usePathname: () => "/projects/prj_1/analysis",
+  usePathname: () => "/projects/prj_1/video",
 }));
 
 afterEach(() => vi.clearAllMocks());
@@ -39,8 +39,8 @@ describe("WorkflowStepper", () => {
     render(
       <WorkflowStepper
         projectId="prj_1"
-        current="analysis"
-        completed={["report", "recipient"]}
+        current="video"
+        completed={["avatar", "report", "voice"]}
       />,
     );
 
@@ -50,8 +50,9 @@ describe("WorkflowStepper", () => {
       .map((link) => link.getAttribute("href"));
 
     expect(hrefs).toEqual([
+      "/projects/prj_1/avatar",
       "/projects/prj_1/report",
-      "/projects/prj_1/recipient",
+      "/projects/prj_1/voice",
     ]);
   });
 
@@ -72,7 +73,7 @@ describe("WorkflowStepper", () => {
       <WorkflowStepper
         projectId="prj_1"
         current="video"
-        completed={["report", "recipient", "analysis"]}
+        completed={["avatar", "report", "voice"]}
       />,
     );
 
@@ -112,7 +113,7 @@ describe("WorkflowStepper", () => {
     render(
       <WorkflowStepper
         projectId="prj_1"
-        current="analysis"
+        current="email"
         completed={completedStepsFor(project)}
       />,
     );

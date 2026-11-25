@@ -15,15 +15,15 @@
  * same checks must exist on the far side.
  */
 
-export const MAX_REPORT_BYTES = 25 * 1024 * 1024;
+const MAX_REPORT_BYTES = 25 * 1024 * 1024;
 
 /** The IANA-registered types. `application/pdf` and the OOXML wordprocessing
  *  type; anything else is refused before the seam is called. */
-export const ACCEPTED_REPORT_TYPES = new Set([
+const ACCEPTED_REPORT_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
-export const ACCEPTED_REPORT_EXTENSIONS = [".pdf", ".docx"];
+const ACCEPTED_REPORT_EXTENSIONS = [".pdf", ".docx"];
 
 /** Passed straight to an `<input accept>` — a hint to the file picker only. */
 export const REPORT_INPUT_ACCEPT =

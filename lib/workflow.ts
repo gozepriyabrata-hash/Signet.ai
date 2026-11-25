@@ -19,9 +19,8 @@ export const WORKFLOW_STEP_ORDER = [
   "avatar",
   "report",
   "voice",
-  "recipient",
-  "analysis",
   "video",
+  "recipient",
   "email",
   "review",
 ] as const satisfies readonly WorkflowStepId[];
@@ -36,19 +35,15 @@ const PRODUCED_ITS_OUTPUT: readonly {
   step: WorkflowStepId;
   done: (project: Project, draft: WorkflowDraft) => boolean;
 }[] = [
-  { step: "avatar", done: (_, draft) => draft.avatarId !== undefined },
+  { step: "avatar", done: (_, draft) => Boolean(draft?.avatarId) },
   // A report still uploading, still parsing, or failed is NOT done. The Report
   // step is where its progress and its Retry live, so that is where a user has
   // to land for the failure to be recoverable in place (CLAUDE.md rule 5).
-  { step: "report", done: (project) => project.report?.status === "parsed" },
-  { step: "voice", done: (_, draft) => draft.voiceId !== undefined },
-  { step: "recipient", done: (project) => project.recipient !== undefined },
-  { step: "analysis", done: (project) => project.analysis !== undefined },
-  // A VideoAsset exists as soon as its render job is queued — it carries a
-  // `jobId` long before it carries anything watchable. Only a playback URL
-  // means the step has produced something.
-  { step: "video", done: (project) => project.video?.playbackUrl !== undefined },
-  { step: "email", done: (project) => project.email !== undefined },
+  { step: "report", done: (project) => project?.report?.status === "parsed" },
+  { step: "voice", done: (_, draft) => Boolean(draft?.voiceId) },
+  { step: "video", done: (project) => Boolean(project?.video?.playbackUrl) },
+  { step: "recipient", done: (project) => Boolean(project?.recipient) },
+  { step: "email", done: (project) => Boolean(project?.email) },
 ];
 
 /** Steps whose output lives only in the browser's draft store. */
@@ -102,9 +97,8 @@ export function resumeStepFor(
   switch (project.status) {
     case "draft":
     case "failed":
-      return firstUnfinishedStep(project, draft);
     case "analysing":
-      return "analysis";
+      return firstUnfinishedStep(project, draft);
     case "video_pending":
       return "video";
     case "email_pending":

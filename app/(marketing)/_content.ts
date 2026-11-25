@@ -121,24 +121,6 @@ export const hero = {
 } as const;
 
 /**
- * The closing CTA band's own ambient video — the same clip as `hero.ambientVideo`.
- * Two other stock clips were supplied alongside this one, proposed as
- * backgrounds for floating "AI chat"/"AI transcription" UI mockups over the
- * two feature sections; that placement was rejected (Signet has neither
- * feature, and `FeatureSplit.tsx`'s `ReservedFrame` placeholders exist
- * specifically so this page never fakes a screenshot), so those two clips are
- * unused.
- *
- * Dormant, not deleted: the video behind FinalCta was removed on request
- * (page.tsx no longer renders it), but AmbientEqualizer's bars and FinalCta's
- * own text/CTA are unchanged, and this constant stays here in case the video
- * is wanted back.
- */
-export const finalCtaAmbientVideo = {
-  src: "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
-} as const;
-
-/**
  * The FAQ section's own ambient video — the same clip again, on request.
  * Purely decorative behind FaqScroller's rows; the cards themselves are
  * opaque (`bg-surface`), so the video only shows in the section's own

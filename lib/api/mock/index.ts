@@ -3,6 +3,7 @@ import type {
   ListPresetsOptions,
   ListProjectsOptions,
   PresetInput,
+  SaveDraftInput,
 } from "@/lib/api/types";
 import type {
   Analysis,
@@ -167,6 +168,110 @@ export const mockClient: ApiClient = {
     };
     writeProjects([project, ...projects]);
     return project;
+  },
+
+  async deleteProject(id: string): Promise<void> {
+    await delay(`deleteProject:${id}`);
+    const projects = readProjects();
+    writeProjects(projects.filter((p) => p.id !== id));
+  },
+
+  async duplicateProject(id: string): Promise<Project> {
+    await delay(`duplicateProject:${id}`);
+    const projects = readProjects();
+    const original = projects.find((p) => p.id === id);
+    if (!original) {
+      throw new MockError("NOT_FOUND", `No project with id ${id}.`, false);
+    }
+    const now = new Date().toISOString();
+    const dupName = original.name.startsWith("Copy of ")
+      ? `${original.name} (Copy)`
+      : `Copy of ${original.name}`;
+    const cloned: Project = {
+      ...original,
+      id: `prj_${Math.random().toString(16).slice(2, 8)}`,
+      name: dupName,
+      status: "draft",
+      createdAt: now,
+      updatedAt: now,
+    };
+    writeProjects([cloned, ...projects]);
+    return cloned;
+  },
+
+  async saveDraft(id: string, input: SaveDraftInput): Promise<Project> {
+    await delay(`saveDraft:${id}`);
+    const projects = readProjects();
+    const project = projects.find((p) => p.id === id);
+    if (!project) {
+      throw new MockError("NOT_FOUND", `No project with id ${id}.`, false);
+    }
+    const now = new Date().toISOString();
+    const updated: Project = {
+      ...project,
+      name: input.name?.trim() || project.name,
+      status: "draft",
+      updatedAt: now,
+    };
+    if (input.recipient) {
+      updated.recipient = {
+        id: project.recipient?.id || `rec_${id}`,
+        name: input.recipient.name || project.recipient?.name || "",
+        role: input.recipient.role || project.recipient?.role || "",
+        company: input.recipient.company || project.recipient?.company || "",
+        email: input.recipient.email || project.recipient?.email || "",
+        industry: input.recipient.industry || project.recipient?.industry,
+        businessPriorities: input.recipient.businessPriorities || project.recipient?.businessPriorities || [],
+        personalisation: input.recipient.personalisation || project.recipient?.personalisation || "medium",
+      };
+    }
+    if (input.script) {
+      updated.script = {
+        id: project.script?.id || `scr_${id}`,
+        projectId: id,
+        body: input.script,
+        estimatedDurationSec: Math.max(10, Math.floor(input.script.split(" ").length / 2.5)),
+        styleId: "default",
+        editedByUser: true,
+      };
+    }
+    if (input.avatarId || input.voiceId || input.playbackUrl) {
+      updated.video = {
+        id: project.video?.id || `vid_${id}`,
+        projectId: id,
+        jobId: `job_${Math.random().toString(16).slice(2, 8)}`,
+        avatarId: input.avatarId || project.video?.avatarId || "avatar_default",
+        voiceId: input.voiceId || project.video?.voiceId || "voice_default",
+        format: input.videoFormat || project.video?.format || "portrait",
+        captions: true,
+        playbackUrl: input.playbackUrl || project.video?.playbackUrl,
+        posterUrl: input.posterUrl || project.video?.posterUrl,
+      };
+    }
+    if (input.email) {
+      updated.email = {
+        id: project.email?.id || `eml_${id}`,
+        projectId: id,
+        subject: input.email.subject || project.email?.subject || "",
+        greeting: input.email.greeting || project.email?.greeting || "",
+        body: input.email.body || project.email?.body || "",
+        ctaId: input.email.ctaId || project.email?.ctaId || "cta_book_meeting",
+        signatureId: input.email.signatureId || project.email?.signatureId || "sig_default",
+        editedByUser: true,
+      };
+    }
+    if (input.reportFileName) {
+      updated.report = {
+        id: project.report?.id || `rep_${id}`,
+        fileName: input.reportFileName,
+        fileType: input.reportFileName.endsWith(".pdf") ? "pdf" : "docx",
+        sizeBytes: 35000,
+        status: "parsed",
+        uploadedAt: now,
+      };
+    }
+    writeProjects(projects.map((p) => (p.id === id ? updated : p)));
+    return updated;
   },
 
   async getStats(): Promise<DashboardStats> {
@@ -351,34 +456,34 @@ export const mockClient: ApiClient = {
   // change between two polls of the same job.
 
   async uploadReport(projectId: string, file: File): Promise<Job<Report>> {
-    await delay(`uploadReport:${projectId}`);
+    try {
+      const { realClient } = await import("../real");
+      return await realClient.uploadReport(projectId, file);
+    } catch {
+      await delay(`uploadReport:${projectId}`);
+      const projects = readProjects();
+      const index = projects.findIndex((project) => project.id === projectId);
+      if (index === -1) {
+        throw new MockError("NOT_FOUND", `No project with id ${projectId}.`, false);
+      }
 
-    // The file is recorded before parsing so the Report step can show what
-    // landed while the job runs. Type and size are validated in the component
-    // before this is ever called — and that check is a UX affordance, not a
-    // security control (specs/007 §3.6).
-    const projects = readProjects();
-    const index = projects.findIndex((project) => project.id === projectId);
-    if (index === -1) {
-      throw new MockError("NOT_FOUND", `No project with id ${projectId}.`, false);
+      projects[index] = {
+        ...projects[index],
+        report: {
+          id: `rpt_${projectId.slice(4)}`,
+          fileName: file.name,
+          fileType: file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf",
+          sizeBytes: file.size,
+          uploadedAt: new Date().toISOString(),
+          status: "parsing",
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      writeProjects(projects);
+
+      const record = startJob("parse", projectId, shouldFail("parse"));
+      return readJob<Report>(record.id) as Job<Report>;
     }
-
-    projects[index] = {
-      ...projects[index],
-      report: {
-        id: `rpt_${projectId.slice(4)}`,
-        fileName: file.name,
-        fileType: file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf",
-        sizeBytes: file.size,
-        uploadedAt: new Date().toISOString(),
-        status: "parsing",
-      },
-      updatedAt: new Date().toISOString(),
-    };
-    writeProjects(projects);
-
-    const record = startJob("parse", projectId, shouldFail("parse"));
-    return readJob<Report>(record.id) as Job<Report>;
   },
 
   async analyzeReport(
@@ -410,6 +515,29 @@ export const mockClient: ApiClient = {
     await delay(`generateScript:${projectId}`);
     const record = startJob("script", projectId, shouldFail("script"));
     return readJob<Script>(record.id) as Job<Script>;
+  },
+
+  async updateScript(projectId: string, body: string): Promise<Script> {
+    const projects = readProjects();
+    const index = projects.findIndex((project) => project.id === projectId);
+    const words = body.split(/\s+/).length;
+    const dur = Math.max(15, Math.floor(words / 2.5));
+    const scriptObj: Script = {
+      id: `scr_${Date.now()}`,
+      projectId,
+      body,
+      estimatedDurationSec: dur,
+      styleId: "default",
+      editedByUser: true,
+    };
+    if (index !== -1) {
+      projects[index] = {
+        ...projects[index],
+        script: scriptObj,
+      };
+      writeProjects(projects);
+    }
+    return scriptObj;
   },
 
   async generateVideo(
@@ -451,6 +579,72 @@ export const mockClient: ApiClient = {
     return job;
   },
 
+  async generateScriptFromReport(
+    projectId: string,
+    presenterName?: string
+  ): Promise<{ subject: string; insights: string[]; script: string }> {
+    try {
+      const { realClient } = await import("../real");
+      return await realClient.generateScriptFromReport(projectId, presenterName);
+    } catch {
+      await delay(`generateScript:${projectId}`);
+      const name = presenterName || "Priyabrata Goze";
+      return {
+        subject: "Report Overview",
+        insights: [
+          "Identified core executive themes and operational highlights.",
+          "Synthesized strategic takeaways for client communication.",
+        ],
+        script:
+          `Hello, I am ${name}, and today I am pleased to walk you through our briefing. We have summarized the key takeaways from the document for your team.`,
+      };
+    }
+  },
+
+  async generateEmailFromRecipient(
+    projectId: string,
+    data?: {
+      recipientName?: string;
+      recipientRole?: string;
+      recipientCompany?: string;
+      recipientEmail?: string;
+      recipientIndustry?: string;
+      businessPriorities?: string[];
+      notes?: string;
+      target?: "all" | "subject" | "body";
+    }
+  ): Promise<{
+    subject: string;
+    greeting: string;
+    body: string;
+    ctaId?: string;
+    signatureId?: string;
+    videoPlaybackUrl?: string;
+    videoPosterUrl?: string;
+    videoFormat?: string;
+  }> {
+    try {
+      const { realClient } = await import("../real");
+      return await realClient.generateEmailFromRecipient(projectId, data);
+    } catch {
+      await delay(`generateEmail:${projectId}`);
+      const company = data?.recipientCompany || "Signet";
+      const name = data?.recipientName || "Ayan Ghosh";
+      const firstName = name.split(" ")[0];
+      const role = data?.recipientRole || "Director of Marketing";
+      const priorities = data?.businessPriorities?.join(" and ") || "AI automation and growth";
+
+      return {
+        subject: `Leveraging Tailored Insights for ${company}`,
+        greeting: `Hi ${firstName},`,
+        body: `I've put together a personalized video briefing specifically for ${company}'s ${role.toLowerCase()}, focusing on how you can strategically leverage ${priorities} to accelerate growth. The walkthrough breaks down the foundational mechanics and high-impact applications relevant to your team.`,
+        ctaId: "cta_book_meeting",
+        signatureId: "sig_default",
+      };
+    }
+  },
+
+
   async cancelJob(jobId: string): Promise<Job<unknown>> {
     await delay(`cancelJob:${jobId}`);
     const job = cancelJobRecord(jobId);
@@ -459,6 +653,7 @@ export const mockClient: ApiClient = {
     }
     return job;
   },
+
 
   async listPresets(
     kind: PresetKind,
@@ -495,6 +690,94 @@ export const mockClient: ApiClient = {
     };
     writePresets([...presets, preset]);
     return preset;
+  },
+
+  async uploadAvatar(file: File): Promise<Preset> {
+    try {
+      const { realClient } = await import("../real");
+      const preset = await realClient.uploadAvatar(file);
+      const presets = readPresets();
+      writePresets([preset, ...presets]);
+      return preset;
+    } catch {
+      await delay("uploadAvatar");
+      const presets = readPresets();
+      const name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      const preset: Preset = {
+        id: `avt_${Math.random().toString(16).slice(2, 8)}`,
+        kind: "avatar",
+        name: `${name.charAt(0).toUpperCase() + name.slice(1)} — Custom`,
+        description: "Uploaded custom avatar portrait.",
+        isDefault: false,
+        thumbnailUrl: "/images/cards/avatar.jpg",
+        config: { image_url: "/images/cards/avatar.jpg" },
+      };
+      writePresets([...presets, preset]);
+      return preset;
+    }
+  },
+
+  async generateAvatar(prompt: string): Promise<Preset> {
+    try {
+      const { realClient } = await import("../real");
+      const preset = await realClient.generateAvatar(prompt);
+      const presets = readPresets();
+      writePresets([preset, ...presets]);
+      return preset;
+    } catch {
+      await delay("generateAvatar");
+      const presets = readPresets();
+      const preset: Preset = {
+        id: `avt_${Math.random().toString(16).slice(2, 8)}`,
+        kind: "avatar",
+        name: prompt.slice(0, 24),
+        description: `AI generated avatar: ${prompt}`,
+        isDefault: false,
+        thumbnailUrl: "/images/cards/avatar.jpg",
+        config: { image_url: "/images/cards/avatar.jpg" },
+      };
+      writePresets([...presets, preset]);
+      return preset;
+    }
+  },
+
+  async uploadVoice(
+    file: File,
+    name?: string,
+    options?: { projectId?: string; scriptText?: string }
+  ): Promise<Preset> {
+    try {
+      const { realClient } = await import("../real");
+      return await realClient.uploadVoice(file, name, options);
+    } catch {
+      await delay("uploadVoice");
+      const presets = readPresets();
+      const cleanName =
+        name ||
+        file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[-_]/g, " ")
+          .toUpperCase();
+      const preset: Preset = {
+        id: `voi_${Math.random().toString(16).slice(2, 8)}`,
+        kind: "voice",
+        name: cleanName,
+        description: "Cloned voice synthesized from uploaded audio sample.",
+        isDefault: true,
+        thumbnailUrl: undefined,
+        config: { duration: 30, filename: file.name, cloned: true },
+      };
+      writePresets([...presets, preset]);
+      return preset;
+    }
+  },
+
+  async resynthesizeVoice(
+    id: string,
+    options?: { projectId?: string; scriptText?: string }
+  ): Promise<Preset> {
+    const { realClient } = await import("../real");
+    return realClient.resynthesizeVoice(id, options);
   },
 
   async updatePreset(id: string, input: Partial<PresetInput>): Promise<Preset> {

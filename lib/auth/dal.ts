@@ -17,7 +17,7 @@ import type { WorkspaceAccount } from "@/types";
  * CLAUDE.md rule 3's third bucket: session/identity is read fresh here, on
  * the server, every time — never cached in Zustand or TanStack Query.
  */
-export const verifySession = cache(async (): Promise<{ accountId: string } | null> => {
+const verifySession = cache(async (): Promise<{ accountId: string } | null> => {
   return readSession();
 });
 

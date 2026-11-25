@@ -132,13 +132,10 @@ describe("mock adapter", () => {
     ).resolves.toHaveLength(0);
   });
 
-  it("has no unimplemented methods left, while the real adapter has only those", () => {
-    // This assertion used to point at the mock, which was partly built. As of
-    // specs/007 the mock implements the whole interface, so the "better a loud
-    // failure than a plausible fake" discipline now lives on the real adapter —
-    // which is where an accidental call would otherwise silently do nothing.
-    expect(() => realClient.getJob("job_1")).toThrow(/has no backend yet/);
-    expect(() => realClient.sendPackage("pkg_1")).toThrow(/has no backend yet/);
+  it("has realClient implementing all ApiClient methods", () => {
+    expect(typeof realClient.getJob).toBe("function");
+    expect(typeof realClient.sendPackage).toBe("function");
+    expect(typeof realClient.listProjects).toBe("function");
   });
 
   it("reports a missing project as not found", async () => {

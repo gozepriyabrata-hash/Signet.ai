@@ -27,7 +27,7 @@ const SETTINGS_KEY = "signet.mock.settings.v1";
  * Every tracking option starts off (specs/008 §3.7). This default is a product
  * decision, not a placeholder — see the comment on `WorkspaceSettings.tracking`.
  */
-export const DEFAULT_SETTINGS: WorkspaceSettings = {
+const DEFAULT_SETTINGS: WorkspaceSettings = {
   tracking: {
     opens: false,
     clicks: false,

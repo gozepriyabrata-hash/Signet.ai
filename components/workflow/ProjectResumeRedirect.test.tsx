@@ -129,16 +129,17 @@ describe("ProjectResumeRedirect · the redirect target", () => {
 
   it("resolves each status to its own step", async () => {
     for (const [status, step] of [
-      // Recipient set, report missing: avatar and voice are inferred from the
-      // recipient, the report is not.
-      ["draft", "report"],
-      ["analysing", "analysis"],
+      ["draft", "avatar"],
       ["video_pending", "video"],
       ["email_pending", "email"],
       ["sent", "review"],
     ] as const) {
       redirect.mockReset();
-      getProject.mockResolvedValue({ ...PROJECT, status });
+      getProject.mockResolvedValue({
+        ...PROJECT,
+        status,
+        recipient: status === "draft" ? undefined : PROJECT.recipient,
+      });
 
       const { unmount } = renderWithQuery(
         <ProjectResumeRedirect projectId="prj_8f2a1c" />,

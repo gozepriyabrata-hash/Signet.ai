@@ -40,16 +40,21 @@ export interface RecipientDraft {
   name: string;
   role: string;
   company: string;
+  email?: string;
   industry: string;
   businessPriorities: string[];
   personalisation: PersonalisationLevel;
+  notes?: string;
 }
 
 export interface WorkflowDraft {
   /** Chosen on the Avatar and Voice steps, read by the Video step. */
   avatarId?: string;
   voiceId?: string;
+  format?: import("@/types").VideoFormat;
+  backgroundPrompt?: string;
   recipient?: Partial<RecipientDraft>;
+  notes?: string;
   /** Analysis edits, held until Next commits them. */
   executiveSummary?: string;
   talkingPointsIncluded?: Record<string, boolean>;

@@ -53,12 +53,43 @@ export interface PresetInput {
   config?: Record<string, unknown>;
 }
 
+export interface SaveDraftInput {
+  name?: string;
+  avatarId?: string;
+  voiceId?: string;
+  videoFormat?: import("@/types").VideoFormat;
+  playbackUrl?: string;
+  posterUrl?: string;
+  recipient?: {
+    name?: string;
+    role?: string;
+    company?: string;
+    email?: string;
+    industry?: string;
+    businessPriorities?: string[];
+    personalisation?: import("@/types").PersonalisationLevel;
+  };
+  script?: string;
+  email?: {
+    subject?: string;
+    greeting?: string;
+    body?: string;
+    ctaId?: string;
+    signatureId?: string;
+  };
+  reportFileName?: string;
+  notes?: string;
+}
+
 export interface ApiClient {
   listProjects(options?: ListProjectsOptions): Promise<Project[]>;
   getProject(id: string): Promise<Project>;
   /** `name` is trimmed by the caller; an empty or omitted name keeps the
    *  adapter's own default ("Untitled project"). */
   createProject(name?: string): Promise<Project>;
+  deleteProject(id: string): Promise<void>;
+  duplicateProject(id: string): Promise<Project>;
+  saveDraft(id: string, input: SaveDraftInput): Promise<Project>;
 
   /**
    * Not in docs/data-model.md's interface — see the note on `DashboardStats`.
@@ -68,10 +99,41 @@ export interface ApiClient {
   getStats(): Promise<DashboardStats>;
 
   uploadReport(projectId: string, file: File): Promise<Job<Report>>;
+  generateScriptFromReport(
+    projectId: string,
+    presenterName?: string
+  ): Promise<{
+    subject: string;
+    insights: string[];
+    script: string;
+  }>;
   analyzeReport(projectId: string, recipient: Recipient): Promise<Job<Analysis>>;
   generateScript(projectId: string, analysis: Analysis): Promise<Job<Script>>;
+  updateScript(projectId: string, body: string): Promise<Script>;
   generateVideo(projectId: string, opts: VideoOptions): Promise<Job<VideoAsset>>;
   generateEmail(projectId: string): Promise<Job<EmailDraft>>;
+  generateEmailFromRecipient(
+    projectId: string,
+    data?: {
+      recipientName?: string;
+      recipientRole?: string;
+      recipientCompany?: string;
+      recipientEmail?: string;
+      recipientIndustry?: string;
+      businessPriorities?: string[];
+      notes?: string;
+      target?: "all" | "subject" | "body";
+    }
+  ): Promise<{
+    subject: string;
+    greeting: string;
+    body: string;
+    ctaId?: string;
+    signatureId?: string;
+    videoPlaybackUrl?: string;
+    videoPosterUrl?: string;
+    videoFormat?: string;
+  }>;
 
   getJob<T>(jobId: string): Promise<Job<T>>;
 
@@ -97,6 +159,17 @@ export interface ApiClient {
   listPresets(kind: PresetKind, options?: ListPresetsOptions): Promise<Preset[]>;
 
   createPreset(kind: PresetKind, input: PresetInput): Promise<Preset>;
+  uploadAvatar(file: File): Promise<Preset>;
+  uploadVoice(
+    file: File,
+    name?: string,
+    options?: { projectId?: string; scriptText?: string }
+  ): Promise<Preset>;
+  resynthesizeVoice(
+    id: string,
+    options?: { projectId?: string; scriptText?: string }
+  ): Promise<Preset>;
+  generateAvatar(prompt: string): Promise<Preset>;
   updatePreset(id: string, input: Partial<PresetInput>): Promise<Preset>;
 
   /**

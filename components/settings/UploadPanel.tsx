@@ -34,7 +34,7 @@ export interface AcceptedFiles {
   maxLabel: string;
 }
 
-export function rejectionFor(
+function rejectionFor(
   file: File,
   accepted: AcceptedFiles,
 ): string | null {

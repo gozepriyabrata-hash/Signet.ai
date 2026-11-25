@@ -13,3 +13,9 @@ next-env.d.ts
 *.tsbuildinfo
 
 .DS_Store
+
+# Backend & Uploads (Frontend repository only)
+server/
+uploads/
+public/uploads/
+

@@ -45,6 +45,8 @@ describe("ProfileMenu", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Priyabrata" }));
 
+    expect(screen.getByRole("menuitem", { name: "Save Draft" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Past Projects" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Theme" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
     expect(
@@ -99,6 +101,16 @@ describe("ProfileMenu", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     expect(logoutAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("invokes onSaveDraft when 'Save Draft' is clicked", async () => {
+    const onSave = vi.fn();
+    render(<ProfileMenu name="Priyabrata" onSaveDraft={onSave} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Priyabrata" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Save Draft" }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 
   it("closes on Escape", async () => {

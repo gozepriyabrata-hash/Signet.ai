@@ -89,11 +89,3 @@ export function ProjectsToolbar({
     </div>
   );
 }
-
-/**
- * Reserves the toolbar's height while the Suspense boundary resolves, so the
- * page does not shift when the client tree hydrates.
- */
-export function ProjectsToolbarFallback() {
-  return <div aria-hidden="true" className="h-[70px]" />;
-}
